@@ -14,6 +14,11 @@ export type Account = {
 const STORAGE_KEY = "borealis.accounts";
 
 /**
+ * local storage key for the account opened last
+ */
+const LAST_KEY = "borealis.accounts.last";
+
+/**
  * subscribers notified on every change
  */
 const listeners = new Set<() => void>();
@@ -98,6 +103,28 @@ export function renameAccount(id: string, name: string) {
  */
 export function removeAccount(id: string) {
   commit(accounts.filter((account) => account.id !== id));
+}
+
+/**
+ * remember the open account so the next launch starts on it
+ *
+ * @param id account id
+ */
+export function rememberAccount(id: string) {
+  localStorage.setItem(LAST_KEY, id);
+}
+
+/**
+ * account opened last, or the first one when it is gone
+ *
+ * @param accounts accounts to pick from
+ *
+ * @returns {Account | undefined} account to open
+ */
+export function lastAccount(accounts: Account[]): Account | undefined {
+  const id = localStorage.getItem(LAST_KEY);
+
+  return accounts.find((account) => account.id === id) ?? accounts[0];
 }
 
 /**

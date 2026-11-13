@@ -11,17 +11,17 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { useAccounts } from "@/lib/accounts";
+import { lastAccount, useAccounts } from "@/lib/accounts";
 
 /**
- * landing route, opens the first account or prompts to add one
+ * landing route, reopens the last account or prompts to add one
  */
 export default function Home() {
   const accounts = useAccounts();
   const [adding, setAdding] = useState(false);
+  const last = lastAccount(accounts);
 
-  if (accounts[0])
-    return <Navigate to={`/accounts/${accounts[0].id}`} replace />;
+  if (last) return <Navigate to={`/accounts/${last.id}`} replace />;
 
   return (
     <Empty>
