@@ -1,7 +1,4 @@
-/**
- * macos uses cmd where other platforms use ctrl
- */
-const isMac = navigator.userAgent.includes("Mac");
+import { isMac } from "@/lib/extras/platform";
 
 /**
  * keys that trigger browser features on their own
