@@ -1,50 +1,49 @@
 import { useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import reactLogo from "../assets/react.svg";
+import { Navigate } from "react-router";
+import { MessageCircleIcon, PlusIcon } from "lucide-react";
+import { AccountDialog } from "@/components/shell/account-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { useAccounts } from "@/lib/accounts";
 
+/**
+ * landing route, opens the first account or prompts to add one
+ */
 export default function Home() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const accounts = useAccounts();
+  const [adding, setAdding] = useState(false);
 
-  /**
-   * ask the rust backend for a greeting
-   */
-  async function greet() {
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  if (accounts[0])
+    return <Navigate to={`/accounts/${accounts[0].id}`} replace />;
 
   return (
-    <>
-      <h1>Welcome to Tauri + React</h1>
+    <Empty>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <MessageCircleIcon />
+        </EmptyMedia>
+        <EmptyTitle>No accounts yet</EmptyTitle>
+        <EmptyDescription>
+          Add a WhatsApp account to get started. You can add as many as you need
+          and switch between them from the sidebar.
+        </EmptyDescription>
+      </EmptyHeader>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+      <EmptyContent>
+        <Button onClick={() => setAdding(true)}>
+          <PlusIcon data-icon="inline-start" />
+          Add account
+        </Button>
+      </EmptyContent>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </>
+      <AccountDialog open={adding} onOpenChange={setAdding} />
+    </Empty>
   );
 }
