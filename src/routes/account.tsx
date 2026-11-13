@@ -1,13 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
-import {
-  EllipsisVerticalIcon,
-  PencilIcon,
-  QrCodeIcon,
-  TrashIcon,
-} from "lucide-react";
+import { EllipsisVerticalIcon, PencilIcon, TrashIcon } from "lucide-react";
 import { AccountDialog } from "@/components/shell/account-dialog";
 import { PageHeader } from "@/components/shell/page-header";
+import { Session } from "@/components/shell/session";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,13 +14,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { initials, removeAccount, useAccount } from "@/lib/accounts";
+  initials,
+  rememberAccount,
+  removeAccount,
+  useAccount,
+} from "@/lib/accounts";
+import { removeSession, useOverlay } from "@/lib/session";
 
 /**
  * view for a single account and its whatsapp session
@@ -34,6 +29,13 @@ export default function Account() {
   const account = useAccount(id);
   const navigate = useNavigate();
   const [renaming, setRenaming] = useState(false);
+  const [menu, setMenu] = useState(false);
+
+  useOverlay(menu);
+
+  useEffect(() => {
+    if (account) rememberAccount(account.id);
+  }, [account]);
 
   if (!account) return <Navigate to="/" replace />;
 
@@ -41,6 +43,7 @@ export default function Account() {
    * remove the account and fall back to the landing route
    */
   function remove() {
+    removeSession(account!.id);
     removeAccount(account!.id);
     navigate("/", { replace: true });
   }
@@ -49,7 +52,7 @@ export default function Account() {
     <>
       <PageHeader
         actions={
-          <DropdownMenu>
+          <DropdownMenu open={menu} onOpenChange={setMenu}>
             <DropdownMenuTrigger
               render={
                 <Button
@@ -78,29 +81,10 @@ export default function Account() {
         <Avatar>
           <AvatarFallback>{initials(account.name)}</AvatarFallback>
         </Avatar>
-        <div className="grid min-w-0 leading-tight">
-          <span className="truncate text-sm font-medium">{account.name}</span>
-          <span className="truncate text-xs text-muted-foreground">
-            Not linked
-          </span>
-        </div>
+        <span className="truncate text-sm font-medium">{account.name}</span>
       </PageHeader>
 
-      {/* the whatsapp web session for this account mounts here */}
-      <section data-slot="session" className="flex min-h-0 flex-1">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <QrCodeIcon />
-            </EmptyMedia>
-            <EmptyTitle>Link this account</EmptyTitle>
-            <EmptyDescription>
-              The WhatsApp Web session for {account.name} will appear here once
-              it's connected.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </section>
+      <Session id={account.id} />
 
       <AccountDialog
         open={renaming}

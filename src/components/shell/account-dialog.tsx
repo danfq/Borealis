@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { addAccount, renameAccount, type Account } from "@/lib/accounts";
+import { useOverlay } from "@/lib/session";
 
 type AccountDialogProps = {
   open: boolean;
@@ -32,6 +33,8 @@ export function AccountDialog({
   onOpenChange,
   account,
 }: AccountDialogProps) {
+  useOverlay(open);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>

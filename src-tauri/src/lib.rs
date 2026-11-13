@@ -1,5 +1,7 @@
 #[cfg(target_os = "macos")]
 mod about;
+mod session;
+mod settings;
 
 /// id of the about menu item
 #[cfg(target_os = "macos")]
@@ -47,9 +49,54 @@ fn show_about<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     });
 }
 
+/// leave the app, closing the window may only minimize it
+#[tauri::command]
+fn quit(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
+    // native file dialogs on every desktop, gtk falls back to its own without a portal
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("GTK_USE_PORTAL").is_none() {
+        // safety: nothing else is running before the builder starts
+        unsafe { std::env::set_var("GTK_USE_PORTAL", "1") };
+    }
+
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .manage(session::Sessions::default())
+        .invoke_handler(tauri::generate_handler![
+            quit,
+            settings::get_settings,
+            settings::set_settings,
+            session::show_session,
+            session::hide_session,
+            session::remove_session,
+            session::answer_permission,
+        ])
+        .setup(|app| {
+            let store = settings::Store::load(app.handle())?;
+            tauri::Manager::manage(app, store);
+
+            // sessions need an overlay to be positioned on linux
+            #[cfg(target_os = "linux")]
+            if let Some(main) = tauri::Manager::get_webview_window(app, "main") {
+                session::linux::install(&main)?;
+            }
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            // keep sessions running and notifying in the background
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event
+                && settings::current(tauri::Manager::app_handle(window)).minimize_on_close
+            {
+                api.prevent_close();
+                let _ = window.minimize();
+            }
+        });
 
     // other platforms keep the window free of a menu bar
     #[cfg(target_os = "macos")]
