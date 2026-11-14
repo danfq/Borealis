@@ -59,6 +59,9 @@ pub const WINDOW: &str = "main";
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub const PERMISSION_EVENT: &str = "permission-request";
 
+/// hides whatsapp's prompts to install its desktop app, the session is one
+const UPSELL: &str = include_str!("upsell.js");
+
 /// event telling the frontend how many chats of an account are unread
 const UNREAD_EVENT: &str = "unread";
 
@@ -360,6 +363,7 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
 
     let builder = WebviewBuilder::new(label(id), WebviewUrl::External(URL.parse().unwrap()))
         .user_agent(&USER_AGENT)
+        .initialization_script(UPSELL)
         .on_navigation(move |url| {
             if is_internal(url) {
                 return true;
