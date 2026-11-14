@@ -122,7 +122,7 @@ The site runs on Coolify from `site/docker-compose.yml`, which builds the `Docke
 3. Set the watch paths to `site/**`, so only changes to the site deploy it.
 4. Turn on automatic deploys.
 
-Coolify then deploys the site whenever `site/` changes on `main`. A release doesn't touch `site/`, so after the installers are published, redeploy the site in Coolify without cache to pick them up.
+Coolify then deploys the site whenever `site/` changes on `main`. A release doesn't touch `site/`, so it doesn't start a deploy. The build checks the repository's releases feed, so any deploy after the installers are published picks them up, with or without cache.
 
 The DNS record for `getborealis.app` points at the Coolify server and isn't proxied, so Coolify can issue the HTTPS certificate.
 
