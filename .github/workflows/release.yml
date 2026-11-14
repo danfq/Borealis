@@ -1,7 +1,8 @@
 # builds and publishes a release whenever `just release` pushes a version tag
 #
 # the release stays a draft until every installer is uploaded, so a failed
-# build never publishes a partial release
+# build never publishes a partial release. apple notarizes the macos build in
+# the background, see notarization.yml
 
 name: Release
 
@@ -9,8 +10,10 @@ on:
   push:
     tags: ["v*"]
 
+# actions lets the macos build turn on the notarization checks
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: release-${{ github.ref_name }}
@@ -88,21 +91,15 @@ jobs:
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
-      # notarization authenticates with an app store connect api key, read from a file
-      - name: Write the notarization key
-        if: matrix.platform == 'macos'
-        run: printf '%s\n' "$APPLE_API_PRIVATE_KEY" > "$RUNNER_TEMP/notarization.p8"
-        env:
-          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
-
-      # the apple variables only matter on macos, where the dmg is signed and
-      # notarized, without a certificate it is only signed ad hoc so it still
-      # opens on apple silicon, after confirming in the system settings
+      # the build only signs, notarization happens after the upload without
+      # waiting on apple, so the runner isn't billed for apple's queue. without
+      # a certificate the dmg is only signed ad hoc so it still opens on apple
+      # silicon, after confirming in the system settings
       - name: Build
         shell: bash
         run: |
           if [ -z "$APPLE_CERTIFICATE" ]; then
-            unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_API_KEY APPLE_API_ISSUER APPLE_API_KEY_PATH
+            unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD
             export APPLE_SIGNING_IDENTITY="-"
           fi
 
@@ -111,13 +108,35 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_API_KEY_PATH: ${{ runner.temp }}/notarization.p8
 
       - name: Upload the installer
         shell: bash
         run: gh release upload "$TAG" ${{ matrix.artifacts }} --clobber
+
+      # submits the uploaded dmg and leaves a note in the release, the
+      # notarization workflow updates it once apple is done
+      - name: Submit for notarization
+        if: matrix.platform == 'macos'
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            bun scripts/notarization.ts unsigned "$TAG"
+            exit 0
+          fi
+
+          key="$RUNNER_TEMP/notarization.p8"
+          printf '%s\n' "$APPLE_API_PRIVATE_KEY" > "$key"
+
+          submission=$(xcrun notarytool submit ${{ matrix.artifacts }} \
+            --key "$key" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" \
+            --output-format json | jq -r .id)
+
+          bun scripts/notarization.ts start "$TAG" "$submission"
+          gh workflow enable notarization.yml
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
 
       # the arch package is built from the debian one
       - name: Keep the debian package for the arch build

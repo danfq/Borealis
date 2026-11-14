@@ -1,0 +1,46 @@
+# checks on apple's notarization of released macos builds and updates the note
+# in each release once apple is done
+#
+# the release workflow turns this on after submitting a build, and it turns
+# itself off again once nothing is pending, so it costs nothing while idle
+
+name: Notarization
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+# contents edits the releases, actions turns the workflow off
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: notarization
+
+jobs:
+  check:
+    name: Check notarization
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Update the release notes
+        id: check
+        run: bun scripts/notarization.ts check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+
+      - name: Turn off once apple is done
+        if: steps.check.outputs.pending == '0'
+        run: gh workflow disable notarization.yml --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
