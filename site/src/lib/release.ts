@@ -63,19 +63,16 @@ const ASSETS: Record<Platform, RegExp> = {
 };
 
 /**
- * shape of the parts of the github api response that are used
+ * parts of a github release that are used, same in the api and in webhooks
  */
-type GitHubRelease = {
+export type GitHubRelease = {
   tag_name: string;
   published_at: string;
   html_url: string;
+  draft: boolean;
+  prerelease: boolean;
   assets: { name: string; browser_download_url: string; size: number }[];
 };
-
-/**
- * how long a release is served before github is asked again
- */
-const MAX_AGE = 5 * 60 * 1000;
 
 /**
  * used when github can't be reached and nothing was fetched yet
@@ -83,9 +80,14 @@ const MAX_AGE = 5 * 60 * 1000;
 const FALLBACK: Release = { url: LATEST_URL, downloads: {} };
 
 /**
- * last release fetched and when
+ * wait before asking github again after a failed request
  */
-let cached: { release: Release; at: number } | undefined;
+const RETRY_AFTER = 60 * 1000;
+
+/**
+ * release served to every visitor, replaced by the release webhook
+ */
+let current: Release | undefined;
 
 /**
  * request in flight, shared by every page rendered meanwhile
@@ -93,38 +95,60 @@ let cached: { release: Release; at: number } | undefined;
 let pending: Promise<Release> | undefined;
 
 /**
- * newest release, fetched from github at most every few minutes
+ * when github last failed to answer
+ */
+let failedAt = 0;
+
+/**
+ * newest release, kept in memory
  *
- * once cached, an outdated release is served right away while the newer one
- * is fetched, so pages never wait on github
+ * github is only asked once after the server starts, the release webhook
+ * keeps it current from then on
  *
  * @returns {Promise<Release>} release
  */
 export async function latestRelease(): Promise<Release> {
-  if (!cached) return refresh();
+  if (current) return current;
 
-  if (Date.now() - cached.at > MAX_AGE) void refresh();
+  // github isn't flooded while it's down
+  if (Date.now() - failedAt < RETRY_AFTER) return FALLBACK;
 
-  return cached.release;
+  return load();
 }
 
 /**
- * fetch the newest release and cache it, keeping the last one on failure
+ * apply a release event sent by github
+ *
+ * a published release is taken as is, anything else like an edit or a
+ * deletion may change which release is the latest, so github is asked
+ *
+ * @param action what happened to the release
+ * @param release release from the event
+ */
+export async function onReleaseEvent(action: string, release: GitHubRelease) {
+  const published = action === "published" || action === "released";
+
+  if (published && !release.draft && !release.prerelease) {
+    current = toRelease(release);
+    return;
+  }
+
+  await load();
+}
+
+/**
+ * fetch the newest release, keeping the current one on failure
  *
  * @returns {Promise<Release>} release
  */
-function refresh(): Promise<Release> {
+function load(): Promise<Release> {
   pending ??= fetchRelease()
+    .then((release) => (current = release))
     .catch((error) => {
-      // retried once the cache is outdated again, so github isn't flooded
       console.warn("couldn't fetch the latest release", error);
+      failedAt = Date.now();
 
-      return cached?.release ?? FALLBACK;
-    })
-    .then((release) => {
-      cached = { release, at: Date.now() };
-
-      return release;
+      return current ?? FALLBACK;
     })
     .finally(() => (pending = undefined));
 
@@ -152,7 +176,17 @@ async function fetchRelease(): Promise<Release> {
 
   if (!response.ok) throw new Error(`github responded ${response.status}`);
 
-  const release = (await response.json()) as GitHubRelease;
+  return toRelease((await response.json()) as GitHubRelease);
+}
+
+/**
+ * pick the installers and details shown on the site out of a github release
+ *
+ * @param release release from github
+ *
+ * @returns {Release} release
+ */
+function toRelease(release: GitHubRelease): Release {
   const downloads: Release["downloads"] = {};
 
   for (const [platform, pattern] of Object.entries(ASSETS)) {

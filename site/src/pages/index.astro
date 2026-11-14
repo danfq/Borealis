@@ -9,7 +9,7 @@ import Privacy from "../components/privacy.astro";
 import Shortcuts from "../components/shortcuts.astro";
 import Layout from "../layouts/layout.astro";
 
-// rendered on every visit, so the downloads always match the latest release
+// rendered on request from the release kept in memory, see lib/release.ts
 export const prerender = false;
 ---
 
