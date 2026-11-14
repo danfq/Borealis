@@ -63,7 +63,7 @@ export function useSidebar(): boolean {
  * toggle the sidebar on ctrl shift s, cmd shift s on macos
  *
  * whatsapp keeps ctrl b for bold, and sessions swallow keys while focused
- * so the backend reports the shortcut from there on linux
+ * so the backend reports the shortcut from there on macos and linux
  *
  * @param enabled false when there is no sidebar to toggle
  */

@@ -464,6 +464,15 @@ pub mod linux {
     /// event asking the frontend to collapse or expand the sidebar
     const SIDEBAR_EVENT: &str = "toggle-sidebar";
 
+    /// event asking the frontend to open the account at an index
+    const SWITCH_EVENT: &str = "switch-account";
+
+    /// event asking the frontend to focus the search
+    const SEARCH_EVENT: &str = "focus-search";
+
+    /// event asking the frontend to open the settings
+    const SETTINGS_EVENT: &str = "open-settings";
+
     /// resize handles and their cursors, corners first so they win the hit test
     const EDGES: [(WindowEdge, &str); 8] = [
         (WindowEdge::NorthWest, "nw-resize"),
@@ -839,7 +848,8 @@ pub mod linux {
 
     /// app shortcuts, the window catches keys before either webview does
     ///
-    /// ctrl q quits and ctrl shift s toggles the sidebar, while there is one
+    /// ctrl q quits, ctrl comma opens the settings, ctrl f searches, ctrl 1 to
+    /// 9 switch accounts and ctrl shift s toggles the sidebar, while there is one
     ///
     /// @param window toplevel window
     /// @param app app handle
@@ -855,6 +865,17 @@ pub mod linux {
                 return Propagation::Stop;
             }
 
+            // whatsapp keeps ctrl shift f for searching inside a chat
+            if control && !shift && key == gdk::keys::constants::f {
+                let _ = app.emit_to(WINDOW, SEARCH_EVENT, ());
+                return Propagation::Stop;
+            }
+
+            if control && !shift && key == gdk::keys::constants::comma {
+                let _ = app.emit_to(WINDOW, SETTINGS_EVENT, ());
+                return Propagation::Stop;
+            }
+
             // the topbar can't collapse, so the key goes to the page instead
             if control
                 && shift
@@ -862,6 +883,19 @@ pub mod linux {
                 && settings::current(&app).rail == Rail::Sidebar
             {
                 let _ = app.emit_to(WINDOW, SIDEBAR_EVENT, ());
+                return Propagation::Stop;
+            }
+
+            let digit = key
+                .to_unicode()
+                .and_then(|key| key.to_digit(10))
+                .filter(|digit| (1..=9).contains(digit));
+
+            if control
+                && !shift
+                && let Some(digit) = digit
+            {
+                let _ = app.emit_to(WINDOW, SWITCH_EVENT, digit - 1);
                 return Propagation::Stop;
             }
 

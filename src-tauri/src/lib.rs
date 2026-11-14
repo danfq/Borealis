@@ -4,10 +4,20 @@ mod about;
 mod notifications;
 mod session;
 mod settings;
+#[cfg(target_os = "macos")]
+mod shortcuts;
 
 /// id of the about menu item
 #[cfg(target_os = "macos")]
 const ABOUT: &str = "about";
+
+/// id of the settings menu item
+#[cfg(target_os = "macos")]
+const SETTINGS: &str = "settings";
+
+/// event asking the frontend to open the settings
+#[cfg(target_os = "macos")]
+const SETTINGS_EVENT: &str = "open-settings";
 
 /// default macos menu with the stock about item swapped for ours
 ///
@@ -16,7 +26,7 @@ const ABOUT: &str = "about";
 /// @returns {Menu} app menu
 #[cfg(target_os = "macos")]
 fn menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<tauri::menu::Menu<R>> {
-    use tauri::menu::{Menu, MenuItem, MenuItemKind};
+    use tauri::menu::{Menu, MenuItem, MenuItemKind, PredefinedMenuItem};
 
     let menu = Menu::default(app)?;
 
@@ -30,6 +40,13 @@ fn menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<tauri::me
             true,
             None::<&str>,
         )?)?;
+
+        // settings sit right under about, as in every mac app
+        app_menu.insert(&PredefinedMenuItem::separator(app)?, 1)?;
+        app_menu.insert(
+            &MenuItem::with_id(app, SETTINGS, "Settings…", true, Some("Cmd+,"))?,
+            2,
+        )?;
     }
 
     Ok(menu)
@@ -92,6 +109,10 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             notifications::install(app.handle());
 
+            // sessions swallow keys while focused
+            #[cfg(target_os = "macos")]
+            shortcuts::install(app.handle());
+
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -109,6 +130,10 @@ pub fn run() {
     let builder = builder.menu(menu).on_menu_event(|app, event| {
         if event.id() == ABOUT {
             show_about(app);
+        }
+
+        if event.id() == SETTINGS {
+            let _ = tauri::Emitter::emit_to(app, session::WINDOW, SETTINGS_EVENT, ());
         }
     });
 

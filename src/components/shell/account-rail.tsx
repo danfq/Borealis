@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -28,6 +29,7 @@ import {
   useAccounts,
   type Account,
 } from "@/lib/accounts";
+import { useSearchFocus } from "@/lib/search";
 import { removeSession } from "@/lib/session";
 import { useSettings, type Rail } from "@/lib/settings";
 import { SIDEBAR_SHORTCUT, toggleSidebar, useSidebar } from "@/lib/sidebar";
@@ -425,6 +427,14 @@ function TopbarSearch() {
     setOpen(true);
     ref.current?.focus();
   }
+
+  useSearchFocus(
+    useCallback(() => {
+      setOpen(true);
+      ref.current?.focus();
+      ref.current?.select();
+    }, []),
+  );
 
   return (
     <div className="flex shrink-0 items-center">

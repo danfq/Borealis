@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router";
 import { isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { isMac } from "@/lib/extras/platform";
 
 /**
  * a whatsapp account managed by the app
@@ -25,6 +26,11 @@ const LAST_KEY = "borealis.accounts.last";
  * event sent by the backend to bring up an account
  */
 const OPEN_EVENT = "open-account";
+
+/**
+ * event sent by the backend when an account shortcut is pressed in a session
+ */
+const SWITCH_EVENT = "switch-account";
 
 /**
  * subscribers notified on every change
@@ -169,6 +175,55 @@ export function useOpenAccountEvent() {
     );
 
     return () => void unlisten.then((unlisten) => unlisten());
+  }, [navigate]);
+}
+
+/**
+ * switch accounts with cmd 1 to 9, ctrl on other platforms
+ *
+ * sessions swallow keys while focused, so the backend reports the shortcut
+ * from there on macos and linux
+ */
+export function useAccountShortcuts() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    /**
+     * open the account at a position in the rail
+     *
+     * @param index account index
+     */
+    const open = (index: number) => {
+      const account = accounts[index];
+
+      if (account) navigate(`/accounts/${account.id}`);
+    };
+
+    /**
+     * switch when the shortcut is pressed in the app webview
+     *
+     * @param event keyboard event
+     */
+    const onKeyDown = (event: KeyboardEvent) => {
+      const modifier = isMac ? event.metaKey : event.ctrlKey;
+
+      if (!modifier || event.shiftKey || event.altKey) return;
+      if (!/^[1-9]$/.test(event.key)) return;
+
+      event.preventDefault();
+      open(Number(event.key) - 1);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    const unlisten = isTauri()
+      ? listen<number>(SWITCH_EVENT, (event) => open(event.payload))
+      : Promise.resolve(() => {});
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      void unlisten.then((unlisten) => unlisten());
+    };
   }, [navigate]);
 }
 
