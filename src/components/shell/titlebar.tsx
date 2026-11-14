@@ -1,6 +1,6 @@
 import { useCallback, useRef, type ReactNode } from "react";
 import { isTauri } from "@tauri-apps/api/core";
-import icon from "../../../src-tauri/icons/128x128.png";
+import icon from "@/assets/icon.svg";
 import { SearchField } from "@/components/shell/search";
 import { WindowControls } from "@/components/shell/window-controls";
 import { isMac } from "@/lib/extras/platform";
