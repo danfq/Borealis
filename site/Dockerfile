@@ -1,7 +1,7 @@
 # builds the website and serves it with astro's node server
 #
-# the home page reads the latest github release on request, so new installers
-# show up within minutes without a redeploy
+# the home page is rendered from the latest github release kept in memory, a
+# github webhook replaces it the moment a release is published
 
 FROM oven/bun:1 AS build
 WORKDIR /site
@@ -29,7 +29,7 @@ COPY --from=build /site/dist ./dist
 
 EXPOSE 80
 
-# a static file, so checks never reach github
-HEALTHCHECK --interval=30s --timeout=3s CMD ["node", "-e", "fetch('http://127.0.0.1/robots.txt').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+# checks the home page, so the release is loaded before coolify sends traffic
+HEALTHCHECK --interval=10s --timeout=5s CMD ["node", "-e", "fetch('http://127.0.0.1/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
 
 CMD ["node", "dist/server/entry.mjs"]
