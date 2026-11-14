@@ -54,6 +54,10 @@ test:
 # run every check used before committing
 ci: fmt-check lint check test
 
+# report memory used by the running app and its webview processes
+memory:
+    scripts/memory.sh
+
 # remove build artifacts and dependencies
 clean:
     rm -rf dist node_modules

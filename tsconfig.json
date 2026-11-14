@@ -1,7 +1,15 @@
 {
   "files": [],
+  "compilerOptions": {
+    "strict": true,
+    "types": ["bun"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/assets/*": ["./src/assets/*"],
+    },
+  },
   "references": [
     { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+    { "path": "./tsconfig.node.json" },
+  ],
 }
