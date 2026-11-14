@@ -20,9 +20,11 @@ export function Titlebar() {
       data-tauri-drag-region="deep"
       className="grid h-12 shrink-0 grid-cols-[1fr_minmax(0,36rem)_1fr] items-center gap-3 border-b bg-sidebar px-3 text-sidebar-foreground"
     >
-      {/* leave room for the traffic lights on macos */}
+      {/* macos titlebars carry no app icon, just room for the traffic lights */}
       <div className={cn("flex items-center", isMac && "pl-18")}>
-        <img src={icon} alt="" draggable={false} className="size-6" />
+        {!isMac && (
+          <img src={icon} alt="" draggable={false} className="size-6" />
+        )}
       </div>
 
       {/* filtering is wired up once there is something to search */}
