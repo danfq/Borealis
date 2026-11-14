@@ -1,0 +1,56 @@
+# builds the website in site/ and deploys it to cloudflare
+#
+# runs when the site changes on main, and after every release so the download
+# links point at the new installers. without the cloudflare secrets the site
+# is only built, so the release workflow still passes
+
+name: Site
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/site.yml"]
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy site
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: site
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # the token lifts github's api rate limit while reading the latest release
+      - name: Build
+        run: bun run build
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Deploy
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::warning::cloudflare secrets aren't set, skipping the deploy"
+            exit 0
+          fi
+
+          bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -179,3 +179,10 @@ jobs:
     steps:
       - name: Publish the release
         run: gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY"
+
+  # the website links to the newest installers, so it's rebuilt once they're out
+  site:
+    name: Update site
+    needs: publish
+    uses: ./.github/workflows/site.yml
+    secrets: inherit
