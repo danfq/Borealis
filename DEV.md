@@ -111,7 +111,7 @@ The website at [getborealis.app](https://getborealis.app) lives in `site/`. It's
 just site  # run the website locally with hot reload
 ```
 
-The home page is rendered on every visit, so its download links, version and file sizes always match the latest GitHub release. The release is cached for 5 minutes, so GitHub isn't asked on every visit. Everything else on the site is static.
+The home page shows the download links, version and file sizes of the latest GitHub release. The site asks GitHub for it once when it starts and keeps it in memory, and a GitHub webhook replaces it the moment a release is published, edited or deleted. Everything else on the site is static.
 
 ### Deploying
 
@@ -122,9 +122,21 @@ The site runs on Coolify from `site/docker-compose.yml`, which builds the `Docke
 3. Set the watch paths to `site/**`, so only changes to the site deploy it.
 4. Turn on automatic deploys.
 
-Coolify then deploys the site whenever `site/` changes on `main`. Releases don't need a deploy, the site shows them within a few minutes of being published.
+Coolify then deploys the site whenever `site/` changes on `main`. Releases don't need a deploy.
 
 The DNS record for `getborealis.app` points at the Coolify server and isn't proxied, so Coolify can issue the HTTPS certificate.
+
+### Release webhook
+
+1. Generate a secret, for example with `openssl rand -hex 32`.
+2. In Coolify, set the `GITHUB_WEBHOOK_SECRET` environment variable of the site to that secret and redeploy it.
+3. In the repository's **Settings > Webhooks**, add a webhook:
+   - **Payload URL:** `https://getborealis.app/api/release`
+   - **Content type:** `application/json`
+   - **Secret:** the same secret
+   - **Events:** choose **Let me select individual events** and pick only **Releases**
+
+GitHub sends a ping when the webhook is saved, which should show a green check in its **Recent Deliveries**. Without the secret, the webhook is turned off and the site only picks up new releases when it restarts.
 
 ## Recommended IDE setup
 
