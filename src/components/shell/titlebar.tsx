@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { SearchIcon } from "lucide-react";
 import icon from "../../../src-tauri/icons/128x128.png";
-import { AccountDialog } from "@/components/shell/account-dialog";
 import { WindowControls } from "@/components/shell/window-controls";
 import { Input } from "@/components/ui/input";
 import { isMac } from "@/lib/extras/platform";
