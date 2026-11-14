@@ -25,9 +25,6 @@ Borealis runs every WhatsApp account in its own isolated WhatsApp Web session in
 
 Download the installer for your platform from the [latest release](../../releases/latest).
 
-> [!NOTE]
-> macOS builds aren't notarized yet, so macOS warns that it can't verify Borealis the first time you open it. To open it anyway, go to **System Settings → Privacy & Security** and click **Open Anyway**.
-
 ## Keyboard shortcuts
 
 | Action                   | macOS                                     | Windows and Linux                             |
