@@ -1,0 +1,36 @@
+---
+import { siApple, siArchlinux, siGithub, siLinux } from "simple-icons";
+
+/**
+ * brands drawn by this component
+ */
+export type Brand = "apple" | "windows" | "linux" | "arch" | "github";
+
+type Props = {
+  brand: Brand;
+  class?: string;
+};
+
+/**
+ * svg path of each brand, windows isn't in simple icons so it's drawn here
+ */
+const PATHS: Record<Brand, string> = {
+  apple: siApple.path,
+  windows:
+    "M0 0h11.377v11.372H0Zm12.623 0H24v11.372H12.623ZM0 12.623h11.377V24H0Zm12.623 0H24V24H12.623Z",
+  linux: siLinux.path,
+  arch: siArchlinux.path,
+  github: siGithub.path,
+};
+
+const { brand, class: className } = Astro.props;
+---
+
+<svg
+  viewBox="0 0 24 24"
+  fill="currentColor"
+  aria-hidden="true"
+  class:list={["shrink-0", className]}
+>
+  <path d={PATHS[brand]} />
+</svg>
