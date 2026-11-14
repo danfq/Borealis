@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
+import { useCallback, useRef, type ReactNode } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import icon from "../../../src-tauri/icons/128x128.png";
 import { SearchField } from "@/components/shell/search";
 import { WindowControls } from "@/components/shell/window-controls";
 import { isMac } from "@/lib/extras/platform";
+import { useSearchFocus } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
 type TitlebarProps = {
@@ -37,7 +38,7 @@ export function Titlebar({ children }: TitlebarProps) {
         )}
       </div>
 
-      {children ?? <SearchField />}
+      {children ?? <CenteredSearch />}
 
       {(controls || !children) && (
         <div className="flex items-center justify-end gap-3">
@@ -46,4 +47,20 @@ export function Titlebar({ children }: TitlebarProps) {
       )}
     </header>
   );
+}
+
+/**
+ * search field always shown in the middle of the bar
+ */
+function CenteredSearch() {
+  const ref = useRef<HTMLInputElement>(null);
+
+  useSearchFocus(
+    useCallback(() => {
+      ref.current?.focus();
+      ref.current?.select();
+    }, []),
+  );
+
+  return <SearchField ref={ref} />;
 }

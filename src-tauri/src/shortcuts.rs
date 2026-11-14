@@ -20,7 +20,11 @@ const SIDEBAR_EVENT: &str = "toggle-sidebar";
 /// event asking the frontend to open the account at an index
 const SWITCH_EVENT: &str = "switch-account";
 
-/// catch cmd 1 to 9 to switch accounts and cmd shift s to toggle the sidebar
+/// event asking the frontend to focus the search
+const SEARCH_EVENT: &str = "focus-search";
+
+/// catch cmd f to search, cmd 1 to 9 to switch accounts and cmd shift s to
+/// toggle the sidebar
 ///
 /// @param app app handle
 pub fn install(app: &AppHandle) {
@@ -61,6 +65,12 @@ fn handle(app: &AppHandle, event: &NSEvent) -> bool {
         return false;
     };
     let key = key.to_string().to_lowercase();
+
+    // whatsapp keeps cmd shift f for searching inside a chat
+    if flags == NSEventModifierFlags::Command && key == "f" {
+        let _ = app.emit_to(WINDOW, SEARCH_EVENT, ());
+        return true;
+    }
 
     if flags == NSEventModifierFlags::Command
         && let Some(digit) = key
