@@ -41,7 +41,7 @@ import { cn } from "@/lib/utils";
  * shared look of every rail entry, icons keep their place when collapsing
  */
 const ITEM =
-  "group/item flex shrink-0 items-center gap-3 rounded-full text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/30";
+  "group/item flex shrink-0 items-center gap-3 rounded-full text-left outline-none";
 
 /**
  * dims entry contents until hovered or active, badges stay at full strength
