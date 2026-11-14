@@ -11,6 +11,9 @@ const COMMANDS: &[&str] = &[
     "hide_session",
     "remove_session",
     "answer_permission",
+    "search",
+    "search_results",
+    "open_search_result",
 ];
 
 fn main() {

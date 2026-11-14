@@ -18,6 +18,8 @@
     "allow-start-session",
     "allow-hide-session",
     "allow-remove-session",
-    "allow-answer-permission"
+    "allow-answer-permission",
+    "allow-search",
+    "allow-open-search-result"
   ]
 }

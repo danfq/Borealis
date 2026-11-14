@@ -2,6 +2,7 @@
 mod about;
 #[cfg(target_os = "macos")]
 mod notifications;
+mod search;
 mod session;
 mod settings;
 #[cfg(target_os = "macos")]
@@ -95,6 +96,9 @@ pub fn run() {
             session::hide_session,
             session::remove_session,
             session::answer_permission,
+            search::search,
+            search::search_results,
+            search::open_search_result,
         ])
         .setup(|app| {
             let store = settings::Store::load(app.handle())?;

@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "sessions",
+  "description": "Lets WhatsApp sessions report search results, and nothing else",
+  "webviews": ["session-*"],
+  "local": false,
+  "remote": {
+    "urls": ["https://web.whatsapp.com"]
+  },
+  "permissions": ["allow-search-results"]
+}
