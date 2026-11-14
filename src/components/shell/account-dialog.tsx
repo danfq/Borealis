@@ -12,53 +12,43 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { addAccount, renameAccount, type Account } from "@/lib/accounts";
+import { addAccount } from "@/lib/accounts";
 import { useOverlay } from "@/lib/session";
 
 type AccountDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-
-  /**
-   * account to rename, omit to add a new one
-   */
-  account?: Account;
 };
 
 /**
- * dialog used to add or rename an account
+ * dialog used to add an account
  */
-export function AccountDialog({
-  open,
-  onOpenChange,
-  account,
-}: AccountDialogProps) {
+export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
   useOverlay(open);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         {/* mounted per open so the form always starts fresh */}
-        <AccountForm account={account} onDone={() => onOpenChange(false)} />
+        <AccountForm onDone={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );
 }
 
 type AccountFormProps = {
-  account?: Account;
   onDone: () => void;
 };
 
 /**
  * name form shown inside the account dialog
  */
-function AccountForm({ account, onDone }: AccountFormProps) {
+function AccountForm({ onDone }: AccountFormProps) {
   const navigate = useNavigate();
-  const [name, setName] = useState(account?.name ?? "");
+  const [name, setName] = useState("");
 
   /**
-   * save the account and close the dialog
+   * add the account, open it and close the dialog
    *
    * @param event form submit event
    */
@@ -67,23 +57,16 @@ function AccountForm({ account, onDone }: AccountFormProps) {
 
     if (!name.trim()) return;
 
-    if (account) {
-      renameAccount(account.id, name);
-    } else {
-      navigate(`/accounts/${addAccount(name).id}`);
-    }
-
+    navigate(`/accounts/${addAccount(name).id}`);
     onDone();
   }
 
   return (
     <form onSubmit={submit} className="grid gap-6">
       <DialogHeader>
-        <DialogTitle>{account ? "Rename account" : "Add account"}</DialogTitle>
+        <DialogTitle>Add account</DialogTitle>
         <DialogDescription>
-          {account
-            ? "Choose a new name for this account."
-            : "Give the account a name. You'll link it to WhatsApp next."}
+          Give the account a name. You'll link it to WhatsApp next.
         </DialogDescription>
       </DialogHeader>
 
@@ -102,7 +85,7 @@ function AccountForm({ account, onDone }: AccountFormProps) {
       <DialogFooter>
         <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
         <Button type="submit" disabled={!name.trim()}>
-          {account ? "Save" : "Add account"}
+          Add account
         </Button>
       </DialogFooter>
     </form>
