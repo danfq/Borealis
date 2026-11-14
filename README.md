@@ -105,9 +105,11 @@ Signing and notarizing the macOS build needs these repository secrets:
 | `APPLE_CERTIFICATE`          | The Developer ID Application certificate, exported as `.p12` and base64 encoded |
 | `APPLE_CERTIFICATE_PASSWORD` | The password chosen when exporting the `.p12`                                   |
 | `APPLE_SIGNING_IDENTITY`     | The certificate's name, like `Developer ID Application: Name (TEAMID)`          |
-| `APPLE_ID`                   | The Apple account email                                                         |
-| `APPLE_PASSWORD`             | An [app-specific password](https://account.apple.com) for that account          |
-| `APPLE_TEAM_ID`              | The team ID from the [membership details](https://developer.apple.com/account)  |
+| `APPLE_API_KEY`              | The ID of the App Store Connect API key used to notarize                        |
+| `APPLE_API_ISSUER`           | The issuer ID of that key                                                       |
+| `APPLE_API_PRIVATE_KEY`      | The contents of the key's `.p8` file                                            |
+
+Only the Account Holder can create a Developer ID certificate, from Xcode or the developer website. The API key can be created in App Store Connect, or with `asc web api-keys create`.
 
 ## Project structure
 
