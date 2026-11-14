@@ -73,71 +73,106 @@ type GitHubRelease = {
 };
 
 /**
- * cached so every component shares a single request per build
+ * how long a release is served before github is asked again
+ */
+const MAX_AGE = 5 * 60 * 1000;
+
+/**
+ * used when github can't be reached and nothing was fetched yet
+ */
+const FALLBACK: Release = { url: LATEST_URL, downloads: {} };
+
+/**
+ * last release fetched and when
+ */
+let cached: { release: Release; at: number } | undefined;
+
+/**
+ * request in flight, shared by every page rendered meanwhile
  */
 let pending: Promise<Release> | undefined;
 
 /**
- * fetch the newest release from github, once per build
+ * newest release, fetched from github at most every few minutes
  *
- * a token in GH_TOKEN or GITHUB_TOKEN lifts the api rate limit in ci
+ * once cached, an outdated release is served right away while the newer one
+ * is fetched, so pages never wait on github
  *
  * @returns {Promise<Release>} release
  */
-export function latestRelease(): Promise<Release> {
-  pending ??= fetchRelease();
+export async function latestRelease(): Promise<Release> {
+  if (!cached) return refresh();
+
+  if (Date.now() - cached.at > MAX_AGE) void refresh();
+
+  return cached.release;
+}
+
+/**
+ * fetch the newest release and cache it, keeping the last one on failure
+ *
+ * @returns {Promise<Release>} release
+ */
+function refresh(): Promise<Release> {
+  pending ??= fetchRelease()
+    .catch((error) => {
+      // retried once the cache is outdated again, so github isn't flooded
+      console.warn("couldn't fetch the latest release", error);
+
+      return cached?.release ?? FALLBACK;
+    })
+    .then((release) => {
+      cached = { release, at: Date.now() };
+
+      return release;
+    })
+    .finally(() => (pending = undefined));
 
   return pending;
 }
 
 /**
- * request the newest release, falling back to the releases page on failure
+ * request the newest release from github
+ *
+ * a token in GH_TOKEN or GITHUB_TOKEN lifts the api rate limit
  *
  * @returns {Promise<Release>} release
  */
 async function fetchRelease(): Promise<Release> {
   const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
-
-  try {
-    const response = await fetch(
-      `https://api.github.com/repos/${REPO}/releases/latest`,
-      {
-        headers: {
-          Accept: "application/vnd.github+json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
+  const response = await fetch(
+    `https://api.github.com/repos/${REPO}/releases/latest`,
+    {
+      headers: {
+        Accept: "application/vnd.github+json",
+        ...(token && { Authorization: `Bearer ${token}` }),
       },
-    );
+    },
+  );
 
-    if (!response.ok) throw new Error(`github responded ${response.status}`);
+  if (!response.ok) throw new Error(`github responded ${response.status}`);
 
-    const release = (await response.json()) as GitHubRelease;
-    const downloads: Release["downloads"] = {};
+  const release = (await response.json()) as GitHubRelease;
+  const downloads: Release["downloads"] = {};
 
-    for (const [platform, pattern] of Object.entries(ASSETS)) {
-      const asset = release.assets.find((asset) => pattern.test(asset.name));
+  for (const [platform, pattern] of Object.entries(ASSETS)) {
+    const asset = release.assets.find((asset) => pattern.test(asset.name));
 
-      if (asset) {
-        downloads[platform as Platform] = {
-          name: asset.name,
-          url: asset.browser_download_url,
-          size: asset.size,
-        };
-      }
+    if (asset) {
+      downloads[platform as Platform] = {
+        name: asset.name,
+        url: asset.browser_download_url,
+        size: asset.size,
+      };
     }
-
-    return {
-      version: release.tag_name.replace(/^v/, ""),
-      date: release.published_at,
-      url: release.html_url,
-      downloads,
-    };
-  } catch (error) {
-    // the site still works, downloads just point at the releases page
-    console.warn("couldn't fetch the latest release", error);
-
-    return { url: LATEST_URL, downloads: {} };
   }
+
+  return {
+    version: release.tag_name.replace(/^v/, ""),
+    date: release.published_at,
+    url: release.html_url,
+    downloads,
+  };
 }
 
 /**

@@ -8,6 +8,9 @@ import Nav from "../components/nav.astro";
 import Privacy from "../components/privacy.astro";
 import Shortcuts from "../components/shortcuts.astro";
 import Layout from "../layouts/layout.astro";
+
+// rendered on every visit, so the downloads always match the latest release
+export const prerender = false;
 ---
 
 <Layout
