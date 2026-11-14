@@ -4,14 +4,18 @@ import { PermissionPrompt } from "@/components/shell/permission-prompt";
 import { Titlebar } from "@/components/shell/titlebar";
 import { useOpenAccountEvent } from "@/lib/accounts";
 import { useQuitShortcut } from "@/lib/app";
+import { useSettings } from "@/lib/settings";
 import { useSidebarShortcut } from "@/lib/sidebar";
+import { cn } from "@/lib/utils";
 
 /**
  * root layout shared by every route
  */
 export default function Root() {
+  const { rail } = useSettings();
+
   useQuitShortcut();
-  useSidebarShortcut();
+  useSidebarShortcut(rail === "sidebar");
   useOpenAccountEvent();
 
   return (
@@ -19,10 +23,13 @@ export default function Root() {
       <div className="flex h-full flex-col bg-background">
         <Titlebar />
 
-        <div className="flex min-h-0 flex-1">
+        {/* the topbar sits under the titlebar, the sidebar next to the page */}
+        <div
+          className={cn("flex min-h-0 flex-1", rail === "topbar" && "flex-col")}
+        >
           <AccountRail />
 
-          <main className="flex min-w-0 flex-1 flex-col">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col">
             <Outlet />
           </main>
         </div>

@@ -27,26 +27,109 @@ import {
   type Account,
 } from "@/lib/accounts";
 import { removeSession } from "@/lib/session";
+import { useSettings, type Rail } from "@/lib/settings";
 import { SIDEBAR_SHORTCUT, toggleSidebar, useSidebar } from "@/lib/sidebar";
 import { cn } from "@/lib/utils";
 
 /**
- * shared look of every sidebar entry, icons keep their place when collapsing
+ * shared look of every rail entry, icons keep their place when collapsing
  */
 const ITEM =
-  "flex h-10 w-full items-center gap-3 rounded-full text-left transition-opacity outline-none focus-visible:ring-3 focus-visible:ring-ring/30";
+  "flex shrink-0 items-center gap-3 rounded-full text-left transition-opacity outline-none focus-visible:ring-3 focus-visible:ring-ring/30";
 
 /**
- * collapsible sidebar used to switch between accounts
+ * entry size for each layout
+ */
+const SIZE: Record<Rail, string> = {
+  sidebar: "h-10 w-full",
+  topbar: "h-9",
+};
+
+/**
+ * icon slot for each layout
+ */
+const SLOT: Record<Rail, string> = {
+  sidebar: "size-10",
+  topbar: "size-9",
+};
+
+/**
+ * box around an entry, holding the active indicator
+ */
+const WRAPPER: Record<Rail, string> = {
+  sidebar: "relative flex w-full shrink-0 px-3",
+  topbar: "relative flex h-full shrink-0 items-center",
+};
+
+/**
+ * active indicator, on the leading edge of the sidebar and spanning the width
+ * of topbar entries like a tab underline
+ */
+const INDICATOR: Record<Rail, string> = {
+  sidebar:
+    "top-1/2 left-0 h-6 w-1 -translate-y-1/2 scale-y-0 rounded-r-full data-[active=true]:scale-y-100",
+  topbar:
+    "inset-x-0 bottom-0 h-1 scale-x-0 rounded-t-full data-[active=true]:scale-x-100",
+};
+
+/**
+ * rail used to switch between accounts, either a collapsible sidebar or a topbar
  */
 export function AccountRail() {
   const accounts = useAccounts();
+  const { rail } = useSettings();
   const sidebar = useSidebar();
   const [adding, setAdding] = useState(false);
   const [renaming, setRenaming] = useState<string>();
 
   // names show while renaming so the field has room
   const expanded = sidebar || renaming !== undefined;
+
+  const items = accounts.map((account) => (
+    <AccountItem
+      key={account.id}
+      account={account}
+      layout={rail}
+      labelled={rail === "topbar" || expanded}
+      renaming={renaming === account.id}
+      onRename={() => setRenaming(account.id)}
+      onRenameEnd={() => setRenaming(undefined)}
+    />
+  ));
+
+  const dialog = <AccountDialog open={adding} onOpenChange={setAdding} />;
+
+  if (rail === "topbar") {
+    return (
+      <nav className="flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar px-3 text-sidebar-foreground">
+        <div className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+          {items}
+
+          <RailButton
+            label="Add account"
+            layout="topbar"
+            labelled={false}
+            onClick={() => setAdding(true)}
+          >
+            <PlusIcon className="size-5" />
+          </RailButton>
+        </div>
+
+        <Separator orientation="vertical" className="my-3" />
+
+        <RailItem
+          to="/settings"
+          label="Settings"
+          layout="topbar"
+          labelled={false}
+        >
+          <SettingsIcon className="size-5" />
+        </RailItem>
+
+        {dialog}
+      </nav>
+    );
+  }
 
   return (
     <nav
@@ -57,20 +140,12 @@ export function AccountRail() {
       )}
     >
       <div className="flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto">
-        {accounts.map((account) => (
-          <AccountItem
-            key={account.id}
-            account={account}
-            expanded={expanded}
-            renaming={renaming === account.id}
-            onRename={() => setRenaming(account.id)}
-            onRenameEnd={() => setRenaming(undefined)}
-          />
-        ))}
+        {items}
 
         <RailButton
           label="Add account"
-          expanded={expanded}
+          layout="sidebar"
+          labelled={expanded}
           onClick={() => setAdding(true)}
         >
           <PlusIcon className="size-5" />
@@ -81,14 +156,20 @@ export function AccountRail() {
         <Separator />
       </div>
 
-      <RailItem to="/settings" label="Settings" expanded={expanded}>
+      <RailItem
+        to="/settings"
+        label="Settings"
+        layout="sidebar"
+        labelled={expanded}
+      >
         <SettingsIcon className="size-5" />
       </RailItem>
 
       <RailButton
         label={expanded ? "Collapse sidebar" : "Expand sidebar"}
         hint={SIDEBAR_SHORTCUT}
-        expanded={expanded}
+        layout="sidebar"
+        labelled={expanded}
         onClick={toggleSidebar}
       >
         {expanded ? (
@@ -98,28 +179,43 @@ export function AccountRail() {
         )}
       </RailButton>
 
-      <AccountDialog open={adding} onOpenChange={setAdding} />
+      {dialog}
     </nav>
   );
 }
 
 type EntryProps = {
   label: string;
-  expanded: boolean;
+  layout: Rail;
+
+  /**
+   * show the label next to the icon
+   */
+  labelled: boolean;
   children: ReactNode;
 };
 
 /**
- * icon slot and the label shown while expanded
+ * icon slot and the label shown next to it
  */
-function Entry({ label, expanded, children }: EntryProps) {
+function Entry({ label, layout, labelled, children }: EntryProps) {
   return (
     <>
-      <span className="flex size-10 shrink-0 items-center justify-center">
+      <span
+        className={cn(
+          "flex shrink-0 items-center justify-center",
+          SLOT[layout],
+        )}
+      >
         {children}
       </span>
-      {expanded && (
-        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+      {labelled && (
+        <span
+          className={cn(
+            "min-w-0 truncate text-sm font-medium",
+            layout === "sidebar" ? "flex-1" : "max-w-40 pr-3",
+          )}
+        >
           {label}
         </span>
       )}
@@ -129,7 +225,8 @@ function Entry({ label, expanded, children }: EntryProps) {
 
 type AccountItemProps = {
   account: Account;
-  expanded: boolean;
+  layout: Rail;
+  labelled: boolean;
 
   /**
    * show the rename field in place of the link
@@ -140,11 +237,12 @@ type AccountItemProps = {
 };
 
 /**
- * sidebar link to an account with its options on right click
+ * rail link to an account with its options on right click
  */
 function AccountItem({
   account,
-  expanded,
+  layout,
+  labelled,
   renaming,
   onRename,
   onRenameEnd,
@@ -192,7 +290,7 @@ function AccountItem({
   }
 
   const avatar = (
-    <Avatar size="lg">
+    <Avatar size={layout === "sidebar" ? "lg" : "default"}>
       <AvatarFallback>{initials(account.name)}</AvatarFallback>
     </Avatar>
   );
@@ -200,15 +298,20 @@ function AccountItem({
   // renamed in place, a dialog would have to hide the session
   if (renaming) {
     return (
-      <div className="relative flex w-full shrink-0 px-3">
-        <div className={ITEM}>
-          <span className="flex size-10 shrink-0 items-center justify-center">
+      <div className={WRAPPER[layout]}>
+        <div className={cn(ITEM, SIZE[layout])}>
+          <span
+            className={cn(
+              "flex shrink-0 items-center justify-center",
+              SLOT[layout],
+            )}
+          >
             {avatar}
           </span>
           <RenameField
             account={account}
             onDone={onRenameEnd}
-            className="flex-1"
+            className={layout === "sidebar" ? "flex-1" : "w-40"}
           />
         </div>
       </div>
@@ -219,7 +322,8 @@ function AccountItem({
     <RailItem
       to={to}
       label={account.name}
-      expanded={expanded}
+      layout={layout}
+      labelled={labelled}
       onContextMenu={openMenu}
     >
       {avatar}
@@ -298,35 +402,40 @@ type RailItemProps = EntryProps & {
 };
 
 /**
- * sidebar link with an active indicator
+ * rail link with an active indicator
  */
 function RailItem({
   to,
   label,
-  expanded,
+  layout,
+  labelled,
   onContextMenu,
   children,
 }: RailItemProps) {
   const active = useMatch(to) !== null;
 
   return (
-    <div className="relative flex w-full shrink-0 px-3">
+    <div className={WRAPPER[layout]}>
       <span
         data-active={active}
-        className="absolute top-1/2 left-0 h-6 w-1 -translate-y-1/2 scale-y-0 rounded-r-full bg-sidebar-foreground transition-transform data-[active=true]:scale-y-100"
+        className={cn(
+          "absolute bg-sidebar-foreground transition-transform",
+          INDICATOR[layout],
+        )}
       />
 
       <Link
         to={to}
-        aria-label={expanded ? undefined : label}
+        aria-label={labelled ? undefined : label}
         aria-current={active ? "page" : undefined}
         onContextMenu={onContextMenu}
         className={cn(
           ITEM,
+          SIZE[layout],
           active ? "opacity-100" : "opacity-60 hover:opacity-100",
         )}
       >
-        <Entry label={label} expanded={expanded}>
+        <Entry label={label} layout={layout} labelled={labelled}>
           {children}
         </Entry>
       </Link>
@@ -336,34 +445,35 @@ function RailItem({
 
 type RailButtonProps = EntryProps & {
   /**
-   * shortcut shown at the end while expanded
+   * shortcut shown at the end while labelled
    */
   hint?: string;
   onClick: () => void;
 };
 
 /**
- * sidebar action styled like the links
+ * rail action styled like the links
  */
 function RailButton({
   label,
   hint,
-  expanded,
+  layout,
+  labelled,
   onClick,
   children,
 }: RailButtonProps) {
   return (
-    <div className="flex w-full shrink-0 px-3">
+    <div className={WRAPPER[layout]}>
       <button
         type="button"
-        aria-label={expanded ? undefined : label}
+        aria-label={labelled ? undefined : label}
         onClick={onClick}
-        className={cn(ITEM, "opacity-60 hover:opacity-100")}
+        className={cn(ITEM, SIZE[layout], "opacity-60 hover:opacity-100")}
       >
-        <Entry label={label} expanded={expanded}>
+        <Entry label={label} layout={layout} labelled={labelled}>
           {children}
         </Entry>
-        {expanded && hint && (
+        {labelled && hint && (
           <span className="pr-3 text-xs text-muted-foreground">{hint}</span>
         )}
       </button>

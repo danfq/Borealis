@@ -64,9 +64,13 @@ export function useSidebar(): boolean {
  *
  * whatsapp keeps ctrl b for bold, and sessions swallow keys while focused
  * so the backend reports the shortcut from there on linux
+ *
+ * @param enabled false when there is no sidebar to toggle
  */
-export function useSidebarShortcut() {
+export function useSidebarShortcut(enabled: boolean) {
   useEffect(() => {
+    if (!enabled) return;
+
     /**
      * toggle when the shortcut is pressed
      *
@@ -92,5 +96,5 @@ export function useSidebarShortcut() {
       window.removeEventListener("keydown", onKeyDown);
       void unlisten.then((unlisten) => unlisten());
     };
-  }, []);
+  }, [enabled]);
 }

@@ -433,7 +433,7 @@ pub mod linux {
     };
 
     use super::{Bounds, PERMISSION_EVENT, Permission, Prompt, WINDOW};
-    use crate::settings::{self, Policy};
+    use crate::settings::{self, Policy, Rail};
 
     /// thickness of the resize border
     const BORDER: i32 = 5;
@@ -819,7 +819,7 @@ pub mod linux {
 
     /// app shortcuts, the window catches keys before either webview does
     ///
-    /// ctrl q quits and ctrl shift s toggles the sidebar
+    /// ctrl q quits and ctrl shift s toggles the sidebar, while there is one
     ///
     /// @param window toplevel window
     /// @param app app handle
@@ -835,7 +835,12 @@ pub mod linux {
                 return Propagation::Stop;
             }
 
-            if control && shift && key == gdk::keys::constants::s {
+            // the topbar can't collapse, so the key goes to the page instead
+            if control
+                && shift
+                && key == gdk::keys::constants::s
+                && settings::current(&app).rail == Rail::Sidebar
+            {
                 let _ = app.emit_to(WINDOW, SIDEBAR_EVENT, ());
                 return Propagation::Stop;
             }
