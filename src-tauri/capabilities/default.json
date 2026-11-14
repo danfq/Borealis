@@ -10,6 +10,16 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-close",
     "core:webview:allow-set-webview-focus",
-    "opener:default"
+    "opener:default",
+    "allow-quit",
+    "allow-get-settings",
+    "allow-set-settings",
+    "allow-show-session",
+    "allow-start-session",
+    "allow-hide-session",
+    "allow-remove-session",
+    "allow-answer-permission",
+    "allow-search",
+    "allow-open-search-result"
   ]
 }

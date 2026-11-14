@@ -30,7 +30,7 @@ import {
   useAccounts,
   type Account,
 } from "@/lib/accounts";
-import { useSearchFocus } from "@/lib/search";
+import { clearSearch, useSearch, useSearchFocus } from "@/lib/search";
 import { removeSession } from "@/lib/session";
 import { useSettings, type Rail } from "@/lib/settings";
 import { SIDEBAR_SHORTCUT, toggleSidebar, useSidebar } from "@/lib/sidebar";
@@ -41,7 +41,7 @@ import { cn } from "@/lib/utils";
  * shared look of every rail entry, icons keep their place when collapsing
  */
 const ITEM =
-  "group/item flex shrink-0 items-center gap-3 rounded-full text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/30";
+  "group/item flex shrink-0 items-center gap-3 rounded-full text-left outline-none";
 
 /**
  * dims entry contents until hovered or active, badges stay at full strength
@@ -440,6 +440,7 @@ function RenameField({ account, onDone, className }: RenameFieldProps) {
  * search tucked behind a button, the field slides open next to it
  */
 function TopbarSearch() {
+  const { query } = useSearch();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
 
@@ -447,7 +448,7 @@ function TopbarSearch() {
    * empty the field and slide it shut
    */
   function close() {
-    if (ref.current) ref.current.value = "";
+    clearSearch();
     setOpen(false);
   }
 
@@ -469,16 +470,21 @@ function TopbarSearch() {
     }, []),
   );
 
+  // picking a result empties the search from elsewhere, so slide shut too
+  useEffect(() => {
+    if (!query && document.activeElement !== ref.current) setOpen(false);
+  }, [query]);
+
   return (
     <div className="flex shrink-0 items-center">
       <div
         data-open={open}
-        className="w-0 overflow-hidden opacity-0 transition-[width,opacity] duration-200 ease-out data-[open=true]:w-72 data-[open=true]:opacity-100"
+        className="w-0 overflow-hidden opacity-0 transition-[width,opacity] duration-200 ease-out data-[open=true]:w-96 data-[open=true]:opacity-100"
       >
         <SearchField
           ref={ref}
           tabIndex={open ? undefined : -1}
-          className="w-72 pr-2"
+          className="w-96 pr-2"
           onBlur={(event) => !event.currentTarget.value && close()}
           onKeyDown={(event) => event.key === "Escape" && close()}
         />

@@ -62,6 +62,12 @@ pub const PERMISSION_EVENT: &str = "permission-request";
 /// hides whatsapp's prompts to install its desktop app, the session is one
 const UPSELL: &str = include_str!("upsell.js");
 
+/// lets the app search the session
+const SEARCH: &str = include_str!("search.js");
+
+/// start of every session webview label, followed by the account id
+const LABEL_PREFIX: &str = "session-";
+
 /// event telling the frontend how many chats of an account are unread
 const UNREAD_EVENT: &str = "unread";
 
@@ -280,7 +286,18 @@ fn parse(id: &str) -> Result<Uuid, String> {
 ///
 /// @returns {String} label
 pub fn label(id: &Uuid) -> String {
-    format!("session-{id}")
+    format!("{LABEL_PREFIX}{id}")
+}
+
+/// account a webview label belongs to
+///
+/// @param label webview label
+///
+/// @returns {Uuid | None} account id, none for webviews that aren't sessions
+pub fn account(label: &str) -> Option<Uuid> {
+    label
+        .strip_prefix(LABEL_PREFIX)
+        .and_then(|id| Uuid::parse_str(id).ok())
 }
 
 /// folder holding the cookies and storage of an account
@@ -364,6 +381,7 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
     let builder = WebviewBuilder::new(label(id), WebviewUrl::External(URL.parse().unwrap()))
         .user_agent(&USER_AGENT)
         .initialization_script(UPSELL)
+        .initialization_script(SEARCH)
         .on_navigation(move |url| {
             if is_internal(url) {
                 return true;
