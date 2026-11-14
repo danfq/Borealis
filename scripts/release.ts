@@ -122,9 +122,17 @@ function fail(message: string): never {
 }
 
 /**
- * make sure the release starts from an up to date and clean main
+ * make sure the release starts from an up to date and clean main, a dry run
+ * only fetches the tags since it changes nothing
+ *
+ * @param dryRun whether nothing gets released
  */
-async function preflight() {
+async function preflight(dryRun: boolean) {
+  if (dryRun) {
+    await $`git fetch --quiet --tags origin`;
+    return;
+  }
+
   const branch = (await $`git branch --show-current`.text()).trim();
 
   if (branch !== BRANCH) fail(`releases are cut from ${BRANCH}, not ${branch}`);
@@ -161,13 +169,14 @@ async function lastRelease(): Promise<string | undefined> {
  * commits since a release, oldest first, merges are left out as their
  * commits are already counted
  *
- * @param since tag of the last release
+ * @param since tag of the last release, every commit counts before the first
  *
  * @returns {Promise<Commit[]>} commits
  */
-async function commitsSince(since: string): Promise<Commit[]> {
+async function commitsSince(since?: string): Promise<Commit[]> {
+  const range = since ? `${since}..HEAD` : "HEAD";
   const log =
-    await $`git log ${since}..HEAD --reverse --no-merges --format=%h%x1f%s%x1f%b%x1e`.text();
+    await $`git log ${range} --reverse --no-merges --format=%h%x1f%s%x1f%b%x1e`.text();
 
   return log
     .split("\x1e")
@@ -183,12 +192,11 @@ async function commitsSince(since: string): Promise<Commit[]> {
 /**
  * release notes grouped by level, kept in the tag and used by ci
  *
- * @param version released version
  * @param commits commits in the release
  *
  * @returns {string} notes in markdown
  */
-function notes(version: string, commits: Commit[]): string {
+function notes(commits: Commit[]): string {
   const sections: [Level, string][] = [
     ["major", "Breaking changes"],
     ["minor", "Features"],
@@ -207,7 +215,7 @@ function notes(version: string, commits: Commit[]): string {
     .join("\n\n");
 
   // git only tells a tag signature apart when it starts on its own line
-  return `${body || `First release of Borealis, version ${version}.`}\n`;
+  return `${body}\n`;
 }
 
 /**
@@ -229,15 +237,15 @@ async function main() {
   const args = new Set(process.argv.slice(2));
   const dryRun = args.has("--dry-run");
 
-  await preflight();
+  await preflight(dryRun);
 
   const current = JSON.parse(readFileSync("package.json", "utf8")).version;
   const since = await lastRelease();
 
-  // the first release ships the current version as it is
-  const commits = since ? await commitsSince(since) : [];
+  // the first release counts the whole history
+  const commits = await commitsSince(since);
 
-  if (since && commits.length === 0) fail(`nothing to release since ${since}`);
+  if (commits.length === 0) fail(`nothing to release since ${since}`);
 
   const version = commits
     .reduce(
@@ -251,7 +259,9 @@ async function main() {
     fail(`${tag} exists already`);
 
   console.log(
-    since ? `commits since ${since}:\n` : "first release, no commits to count",
+    since
+      ? `commits since ${since}:\n`
+      : "first release, counting every commit:\n",
   );
 
   for (const commit of commits) {
@@ -280,7 +290,7 @@ async function main() {
 
   // the tag carries the notes, ci turns them into the release description
   // verbatim keeps the markdown headings git would take for comments
-  await $`git tag --annotate --cleanup=verbatim ${tag} --file=- < ${Buffer.from(notes(version, commits))}`;
+  await $`git tag --annotate --cleanup=verbatim ${tag} --file=- < ${Buffer.from(notes(commits))}`;
   await $`git push --atomic --quiet origin ${BRANCH} ${tag}`;
 
   console.log(`\npushed ${tag}, ci builds and publishes it`);

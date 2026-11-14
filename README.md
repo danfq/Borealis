@@ -87,7 +87,7 @@ The version is worked out from every commit since the last release tag, oldest f
 - `feat` bumps the minor version.
 - Everything else bumps the patch version.
 
-Minor and patch never go above 9. Going past 9 resets the segment to 0 and carries one into the segment before it, so `0.1.9` becomes `0.2.0` and `0.9.9` becomes `1.0.0`. The major version has no limit. The first release ships the current version as it is.
+Minor and patch never go above 9. Going past 9 resets the segment to 0 and carries one into the segment before it, so `0.1.9` becomes `0.2.0` and `0.9.9` becomes `1.0.0`. The major version has no limit. The first release counts every commit in the history, starting from the version in `package.json`. A dry run works from any branch, even with uncommitted changes.
 
 The new version is written to `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock` and `packaging/arch/PKGBUILD`, committed as `chore(release): vX.Y.Z` and tagged. Pushing the tag starts the [release workflow](.github/workflows/release.yml), which builds:
 
