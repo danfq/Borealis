@@ -105,23 +105,31 @@ Without `APPLE_CERTIFICATE`, the DMG is only signed ad hoc and isn't notarized.
 
 ## Website
 
-The website at [getborealis.app](https://getborealis.app) lives in `site/`. It's a static [Astro](https://astro.build) site styled with [Tailwind CSS](https://tailwindcss.com), with its own dependencies, and is served by [Cloudflare Workers](https://developers.cloudflare.com/workers/static-assets/).
+The website at [getborealis.app](https://getborealis.app) lives in `site/`. It's a static [Astro](https://astro.build) site styled with [Tailwind CSS](https://tailwindcss.com), with its own dependencies.
 
 ```sh
-just site         # run the website locally with hot reload
-just site-deploy  # build the website and deploy it from your machine
+just site  # run the website locally with hot reload
 ```
 
-The download links and the version number come from the latest GitHub release when the site is built. The [site workflow](.github/workflows/site.yml) builds and deploys the site whenever `site/` changes on `main`, and again after every release, so the links always point at the newest installers.
+The download links and the version number come from the latest GitHub release when the site is built.
 
-Deploying needs these repository secrets. Without them, the site is only built.
+### Deploying
 
-| Secret                  | Value                                                                    |
-| ----------------------- | ------------------------------------------------------------------------ |
-| `CLOUDFLARE_API_TOKEN`  | An API token made from the **Edit Cloudflare Workers** template          |
-| `CLOUDFLARE_ACCOUNT_ID` | The ID of the Cloudflare account that holds the `getborealis.app` domain |
+The site runs on Coolify from `site/docker-compose.yml`, which builds the `Dockerfile` and serves the result with nginx. To set it up in Coolify:
 
-The first deploy connects `getborealis.app` to the site and creates its DNS records, as set in `site/wrangler.jsonc`.
+1. Add this repository as a **Docker Compose** resource, with `/site` as the base directory and `/docker-compose.yml` as the compose file.
+2. Set the domain of the `site` service to `https://getborealis.app`.
+3. Set the watch paths to `site/**`, so only changes to the site deploy it.
+4. Turn on automatic deploys.
+
+Coolify then deploys the site whenever `site/` changes on `main`. A release doesn't touch `site/`, so the [site workflow](.github/workflows/site.yml) asks Coolify for a deploy without cache after every release, which picks up the new installers. It needs these repository secrets, and does nothing without them:
+
+| Secret            | Value                                                                    |
+| ----------------- | ------------------------------------------------------------------------ |
+| `COOLIFY_WEBHOOK` | The deploy webhook of the site, found in its **Webhooks** tab in Coolify |
+| `COOLIFY_TOKEN`   | A Coolify API token with the **deploy** permission                       |
+
+The DNS record for `getborealis.app` points at the Coolify server and isn't proxied, so Coolify can issue the HTTPS certificate.
 
 ## Recommended IDE setup
 
