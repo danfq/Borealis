@@ -20,6 +20,7 @@ import {
 import { AccountDialog } from "@/components/shell/account-dialog";
 import { SearchField } from "@/components/shell/search";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -33,13 +34,20 @@ import { useSearchFocus } from "@/lib/search";
 import { removeSession } from "@/lib/session";
 import { useSettings, type Rail } from "@/lib/settings";
 import { SIDEBAR_SHORTCUT, toggleSidebar, useSidebar } from "@/lib/sidebar";
+import { useUnread } from "@/lib/unread";
 import { cn } from "@/lib/utils";
 
 /**
  * shared look of every rail entry, icons keep their place when collapsing
  */
 const ITEM =
-  "flex shrink-0 items-center gap-3 rounded-full text-left transition-opacity outline-none focus-visible:ring-3 focus-visible:ring-ring/30";
+  "group/item flex shrink-0 items-center gap-3 rounded-full text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/30";
+
+/**
+ * dims entry contents until hovered or active, badges stay at full strength
+ */
+const DIM =
+  "opacity-60 transition-opacity group-hover/item:opacity-100 group-data-[active=true]/item:opacity-100";
 
 /**
  * entry size for each layout
@@ -199,33 +207,56 @@ type EntryProps = {
    * show the label next to the icon
    */
   labelled: boolean;
+
+  /**
+   * count shown in a badge, hidden at 0
+   */
+  badge?: number;
   children: ReactNode;
 };
 
 /**
- * icon slot and the label shown next to it
+ * icon slot, the label shown next to it and an optional count badge
  */
-function Entry({ label, layout, labelled, children }: EntryProps) {
+function Entry({ label, layout, labelled, badge = 0, children }: EntryProps) {
+  const count = badge > 0 && (
+    <Badge
+      aria-label={`${badge} unread`}
+      className={cn(
+        labelled
+          ? layout === "sidebar" && "mr-3"
+          : "absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 text-[0.625rem] ring-2 ring-sidebar",
+      )}
+    >
+      {badge > 99 ? "99+" : badge}
+    </Badge>
+  );
+
   return (
     <>
       <span
         className={cn(
-          "flex shrink-0 items-center justify-center",
+          "relative flex shrink-0 items-center justify-center",
           SLOT[layout],
         )}
       >
-        {children}
+        <span className={cn("flex items-center justify-center", DIM)}>
+          {children}
+        </span>
+        {!labelled && count}
       </span>
       {labelled && (
         <span
           className={cn(
             "min-w-0 truncate text-sm font-medium",
-            layout === "sidebar" ? "flex-1" : "max-w-40 pr-3",
+            layout === "sidebar" ? "flex-1" : "max-w-40",
+            DIM,
           )}
         >
           {label}
         </span>
       )}
+      {labelled && count}
     </>
   );
 }
@@ -257,6 +288,7 @@ function AccountItem({
   const to = `/accounts/${account.id}`;
   const active = useMatch(to) !== null;
   const navigate = useNavigate();
+  const unread = useUnread(account.id);
   const menu = useRef<Menu>(undefined);
 
   useEffect(() => () => void menu.current?.close(), []);
@@ -331,6 +363,7 @@ function AccountItem({
       label={account.name}
       layout={layout}
       labelled={labelled}
+      badge={unread}
       onContextMenu={openMenu}
     >
       {avatar}
@@ -477,6 +510,7 @@ function RailItem({
   label,
   layout,
   labelled,
+  badge,
   onContextMenu,
   children,
 }: RailItemProps) {
@@ -496,14 +530,15 @@ function RailItem({
         to={to}
         aria-label={labelled ? undefined : label}
         aria-current={active ? "page" : undefined}
+        data-active={active}
         onContextMenu={onContextMenu}
         className={cn(
           ITEM,
           SIZE[layout],
-          active ? "opacity-100" : "opacity-60 hover:opacity-100",
+          layout === "topbar" && labelled && "pr-3",
         )}
       >
-        <Entry label={label} layout={layout} labelled={labelled}>
+        <Entry label={label} layout={layout} labelled={labelled} badge={badge}>
           {children}
         </Entry>
       </Link>
@@ -542,20 +577,19 @@ function RailButton({
         type="button"
         aria-label={labelled ? undefined : label}
         aria-pressed={pressed}
+        data-active={pressed}
         onClick={onClick}
         // focus stays put, so the search field doesn't blur shut before its toggle runs
         onMouseDown={(event) => event.preventDefault()}
-        className={cn(
-          ITEM,
-          SIZE[layout],
-          pressed ? "opacity-100" : "opacity-60 hover:opacity-100",
-        )}
+        className={cn(ITEM, SIZE[layout])}
       >
         <Entry label={label} layout={layout} labelled={labelled}>
           {children}
         </Entry>
         {labelled && hint && (
-          <span className="pr-3 text-xs text-muted-foreground">{hint}</span>
+          <span className={cn("pr-3 text-xs text-muted-foreground", DIM)}>
+            {hint}
+          </span>
         )}
       </button>
     </div>

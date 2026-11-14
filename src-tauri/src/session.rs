@@ -7,7 +7,8 @@ use std::{path::Path, sync::Mutex, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use tauri::{
-    AppHandle, LogicalPosition, LogicalSize, Manager, Url, Webview, WebviewBuilder, WebviewUrl,
+    AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, Url, Webview, WebviewBuilder,
+    WebviewUrl,
     webview::{DownloadEvent, NewWindowResponse, PageLoadEvent},
 };
 use tauri_plugin_opener::OpenerExt;
@@ -43,6 +44,9 @@ pub const WINDOW: &str = "main";
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub const PERMISSION_EVENT: &str = "permission-request";
 
+/// event telling the frontend how many chats of an account are unread
+const UNREAD_EVENT: &str = "unread";
+
 /// webviews forget granted notifications between launches, so ask again
 /// silently when they are allowed or whatsapp keeps showing its banner
 const NOTIFICATIONS: &str =
@@ -68,6 +72,13 @@ pub enum Permission {
     Notifications,
     Microphone,
     Camera,
+}
+
+/// unread chats of an account sent to the frontend
+#[derive(Clone, Serialize)]
+struct Unread {
+    account: String,
+    count: u32,
 }
 
 /// permission prompt sent to the frontend
@@ -144,6 +155,31 @@ pub async fn show_session(
     }
 
     Ok(())
+}
+
+/// start the session of an account in the background, so it notifies and
+/// reports unread chats before it is first opened
+///
+/// @param id account id
+#[tauri::command]
+pub async fn start_session(app: AppHandle, id: String) -> Result<(), String> {
+    let id = parse(&id)?;
+
+    if app.get_webview(&label(&id)).is_some() {
+        return Ok(());
+    }
+
+    // child webviews start visible, so the session starts out tiny and is
+    // hidden right away, showing it later moves it into place
+    let bounds = Bounds {
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+    };
+
+    let webview = create(&app, &id, bounds).map_err(|e| e.to_string())?;
+    webview.hide().map_err(|e| e.to_string())
 }
 
 /// hide the visible session, it keeps running in the background
@@ -244,6 +280,19 @@ fn data_directory(app: &AppHandle, id: &Uuid) -> tauri::Result<std::path::PathBu
         .join(id.to_string()))
 }
 
+/// unread chats whatsapp puts in front of its title, like "(3) WhatsApp"
+///
+/// @param title document title
+///
+/// @returns {u32} unread chats, 0 when there are none
+fn unread(title: &str) -> u32 {
+    title
+        .strip_prefix('(')
+        .and_then(|rest| rest.split_once(')'))
+        .and_then(|(count, _)| count.parse().ok())
+        .unwrap_or(0)
+}
+
 /// check whether a url belongs to whatsapp
 ///
 /// @param url url to check
@@ -275,6 +324,8 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
     let popup = app.clone();
     let load = app.clone();
     let download = app.clone();
+    let title = app.clone();
+    let account = id.to_string();
 
     let builder = WebviewBuilder::new(label(id), WebviewUrl::External(URL.parse().unwrap()))
         .user_agent(USER_AGENT)
@@ -302,6 +353,16 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
             {
                 let _ = webview.eval(NOTIFICATIONS);
             }
+        })
+        // whatsapp keeps the unread chats in its title
+        .on_document_title_changed(move |_, document_title| {
+            let unread = Unread {
+                account: account.clone(),
+                count: unread(&document_title),
+            };
+
+            // only the app webview may learn about other accounts
+            let _ = title.emit_to(WINDOW, UNREAD_EVENT, unread);
         })
         .on_download(move |webview, event| match event {
             DownloadEvent::Requested { destination, .. }

@@ -5,6 +5,7 @@ import { Titlebar } from "@/components/shell/titlebar";
 import { useAccountShortcuts, useOpenAccountEvent } from "@/lib/accounts";
 import { useQuitShortcut, useSettingsShortcut } from "@/lib/app";
 import { useSearchShortcut } from "@/lib/search";
+import { useStartSessions } from "@/lib/session";
 import { useSettings } from "@/lib/settings";
 import { useSidebarShortcut } from "@/lib/sidebar";
 
@@ -21,6 +22,7 @@ export default function Root() {
   useAccountShortcuts();
   useSearchShortcut();
   useSettingsShortcut();
+  useStartSessions();
 
   return (
     <>

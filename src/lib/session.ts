@@ -1,5 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { useAccounts } from "@/lib/accounts";
+import { useSettings } from "@/lib/settings";
 
 /**
  * session area in css pixels relative to the window
@@ -62,6 +64,33 @@ export function hideSession() {
     hiding = false;
     enqueue("hide_session");
   });
+}
+
+/**
+ * start the session of an account in the background, nothing happens when it
+ * is running already
+ *
+ * @param id account id
+ */
+export function startSession(id: string) {
+  enqueue("start_session", { id });
+}
+
+/**
+ * start every session while the settings ask for it, so all accounts notify
+ * and count unread chats before they are opened
+ *
+ * turning it off leaves running sessions alone until the next launch
+ */
+export function useStartSessions() {
+  const accounts = useAccounts();
+  const { startAllSessions } = useSettings();
+
+  useEffect(() => {
+    if (!startAllSessions) return;
+
+    for (const account of accounts) startSession(account.id);
+  }, [accounts, startAllSessions]);
 }
 
 /**

@@ -96,6 +96,25 @@ export default function Settings() {
 
               <Field orientation="horizontal">
                 <FieldContent>
+                  <FieldLabel htmlFor="start-all-sessions">
+                    Start all accounts on launch
+                  </FieldLabel>
+                  <FieldDescription>
+                    Every account gets notifications and unread counts right
+                    away, not just the ones you opened. Uses more memory.
+                  </FieldDescription>
+                </FieldContent>
+                <Switch
+                  id="start-all-sessions"
+                  checked={settings.startAllSessions}
+                  onCheckedChange={(startAllSessions) =>
+                    updateSettings({ startAllSessions })
+                  }
+                />
+              </Field>
+
+              <Field orientation="horizontal">
+                <FieldContent>
                   <FieldLabel htmlFor="minimize-on-close">
                     Minimize on close
                   </FieldLabel>
