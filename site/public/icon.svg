@@ -1,0 +1,40 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Borealis">
+  <defs>
+    <linearGradient id="b-sky" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#121a33"/>
+      <stop offset="1" stop-color="#0a0e1f"/>
+    </linearGradient>
+    <linearGradient id="b-aurora" x1="0.1" y1="0.15" x2="0.9" y2="0.9">
+      <stop offset="0" stop-color="#43e08c"/>
+      <stop offset="0.38" stop-color="#28d3c9"/>
+      <stop offset="0.72" stop-color="#5a8bff"/>
+      <stop offset="1" stop-color="#b07bff"/>
+    </linearGradient>
+    <radialGradient id="b-glow" cx="0.3" cy="0.2" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="b-soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <clipPath id="b-bubble">
+      <path d="M176 128 H336 A88 88 0 0 1 424 216 V240 A88 88 0 0 1 336 328 H236
+               C228 360 206 380 176 390 C196 372 206 350 206 328 H176
+               A88 88 0 0 1 88 240 V216 A88 88 0 0 1 176 128 Z"/>
+    </clipPath>
+  </defs>
+
+  <rect width="512" height="512" rx="136" fill="url(#b-sky)"/>
+
+  <!-- the bubble, filled with a smooth aurora -->
+  <g clip-path="url(#b-bubble)">
+    <rect x="80" y="110" width="360" height="300" fill="url(#b-aurora)"/>
+    <!-- gentle aurora shimmer: broad soft diagonal bands, low contrast -->
+    <g filter="url(#b-soft)" opacity="0.5">
+      <path d="M150 90 C210 170 150 250 230 360 L300 360 C210 250 300 170 230 90 Z" fill="#ffffff" opacity="0.22"/>
+      <path d="M300 90 C360 180 300 260 360 360 L430 360 C360 260 430 180 370 90 Z" fill="#9affd6" opacity="0.18"/>
+    </g>
+    <!-- soft top-left light -->
+    <rect x="80" y="110" width="360" height="300" fill="url(#b-glow)"/>
+  </g>
+</svg>

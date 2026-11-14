@@ -1,0 +1,109 @@
+---
+import { ArrowRight, Download } from "@lucide/astro";
+import Aurora from "./aurora.astro";
+import BrandIcon from "./brand-icon.astro";
+import Demo from "./demo.astro";
+import { PLATFORMS } from "../lib/platforms";
+import { latestRelease } from "../lib/release";
+
+const release = await latestRelease();
+
+/**
+ * the main download for each detected system, arch can't be told apart from
+ * other distributions so it gets the appimage
+ */
+const PRIMARY = PLATFORMS.filter((info) => info.platform !== "arch");
+
+/**
+ * shows a download only on the system it's for
+ */
+const VISIBLE = {
+  macos: "hidden os-macos:inline-flex",
+  windows: "hidden os-windows:inline-flex",
+  linux: "hidden os-linux:inline-flex",
+};
+
+const BUTTON =
+  "items-center gap-2.5 rounded-full bg-white px-6 py-3.5 font-semibold text-night shadow-[0_0_40px_-8px] shadow-aurora-teal/60 transition hover:bg-slate-200 hover:shadow-aurora-teal/80";
+---
+
+<section class="relative isolate pt-20 sm:pt-28">
+  <Aurora />
+
+  <div class="mx-auto max-w-6xl px-6 text-center">
+    {release.version && (
+      <a
+        href={release.url}
+        class="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1 pr-3 pl-1 text-sm text-slate-300 backdrop-blur transition-colors hover:border-white/20"
+      >
+        <span class="rounded-full bg-aurora-teal/15 px-2 py-0.5 text-xs font-semibold text-aurora-teal">
+          New
+        </span>
+        Borealis {release.version} is out
+        <ArrowRight class="size-3.5 transition-transform group-hover:translate-x-0.5" />
+      </a>
+    )}
+
+    <h1 class="mx-auto mt-8 max-w-5xl text-5xl font-bold tracking-tight text-balance text-white sm:text-7xl">
+      All your WhatsApp accounts.
+      <br />
+      <span class="text-aurora">One window.</span>
+    </h1>
+
+    <p class="mx-auto mt-6 max-w-2xl text-lg text-pretty text-slate-400 sm:text-xl">
+      Borealis keeps your personal and work chats side by side, so you can
+      switch between them in a click. Every account stays signed in on its own,
+      and Borealis stays light on your computer.
+    </p>
+
+    <div class="mt-10 flex flex-col items-center gap-4">
+      {PRIMARY.map((info) => {
+        const download = release.downloads[info.platform];
+
+        return (
+          <a
+            href={download?.url ?? release.url}
+            class:list={[
+              BUTTON,
+              VISIBLE[info.platform as keyof typeof VISIBLE],
+            ]}
+          >
+            <BrandIcon brand={info.brand} class="size-5" />
+            Download for {info.name}
+          </a>
+        );
+      })}
+
+      <!-- phones, tablets and anything that couldn't be detected -->
+      <a
+        href="#download"
+        class:list={[
+          BUTTON,
+          "inline-flex os-macos:hidden os-windows:hidden os-linux:hidden",
+        ]}
+      >
+        <Download class="size-5" />
+        Download Borealis
+      </a>
+
+      <p class="text-sm text-slate-500">
+        <span class="os-other:hidden">
+          Free and open source.{" "}
+          <a
+            href="#download"
+            class="text-slate-300 underline-offset-4 hover:underline"
+          >
+            Other systems
+          </a>
+        </span>
+        <span class="hidden os-other:inline">
+          Free and open source, for macOS, Windows and Linux.
+        </span>
+      </p>
+    </div>
+  </div>
+
+  <div class="mx-auto mt-16 max-w-6xl px-4 sm:mt-20 sm:px-6">
+    <Demo />
+  </div>
+</section>

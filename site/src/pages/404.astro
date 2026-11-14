@@ -1,0 +1,28 @@
+---
+import Aurora from "../components/aurora.astro";
+import Nav from "../components/nav.astro";
+import Layout from "../layouts/layout.astro";
+---
+
+<Layout
+  title="Page not found | Borealis"
+  description="This page doesn't exist."
+>
+  <Nav />
+  <main class="relative isolate flex min-h-[70dvh] items-center justify-center px-6 text-center">
+    <Aurora />
+    <div>
+      <p class="text-sm font-semibold text-aurora-teal">404</p>
+      <h1 class="mt-3 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+        Lost in the northern lights
+      </h1>
+      <p class="mt-4 text-lg text-slate-400">This page doesn't exist.</p>
+      <a
+        href="/"
+        class="mt-8 inline-flex rounded-full bg-white px-5 py-2.5 font-semibold text-night hover:bg-slate-200"
+      >
+        Back home
+      </a>
+    </div>
+  </main>
+</Layout>

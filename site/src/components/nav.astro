@@ -1,0 +1,52 @@
+---
+import BrandIcon from "./brand-icon.astro";
+import { REPO_URL } from "../lib/release";
+
+/**
+ * sections linked from the nav
+ */
+const LINKS = [
+  { href: "/#features", label: "Features" },
+  { href: "/#privacy", label: "Privacy" },
+  { href: "/#shortcuts", label: "Shortcuts" },
+  { href: "/#faq", label: "FAQ" },
+];
+---
+
+<header class="sticky top-0 z-50 border-b border-white/5 bg-night/70 backdrop-blur-xl">
+  <nav class="mx-auto flex h-16 max-w-6xl items-center gap-8 px-6">
+    <a href="/" class="flex items-center gap-2.5 font-semibold text-white">
+      <img src="/icon.svg" alt="" width="32" height="32" class="size-8" />
+      Borealis
+    </a>
+
+    <ul class="hidden items-center gap-6 text-sm md:flex">
+      {LINKS.map((link) => (
+        <li>
+          <a
+            href={link.href}
+            class="text-slate-400 transition-colors hover:text-white"
+          >
+            {link.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="ml-auto flex items-center gap-2">
+      <a
+        href={REPO_URL}
+        aria-label="Borealis on GitHub"
+        class="flex size-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+      >
+        <BrandIcon brand="github" class="size-5" />
+      </a>
+      <a
+        href="/#download"
+        class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-night transition-colors hover:bg-slate-200"
+      >
+        Download
+      </a>
+    </div>
+  </nav>
+</header>
