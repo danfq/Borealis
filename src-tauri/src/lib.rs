@@ -91,6 +91,7 @@ pub fn run() {
             settings::get_settings,
             settings::set_settings,
             session::show_session,
+            session::start_session,
             session::hide_session,
             session::remove_session,
             session::answer_permission,

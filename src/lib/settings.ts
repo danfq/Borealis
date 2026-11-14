@@ -50,6 +50,11 @@ export type Settings = {
    */
   askDownloadLocation: boolean;
 
+  /**
+   * start every session on launch instead of when it is first opened
+   */
+  startAllSessions: boolean;
+
   permissions: Record<Permission, Policy>;
 
   /**
@@ -69,6 +74,7 @@ export type Rail = "sidebar" | "topbar";
 const DEFAULTS: Settings = {
   minimizeOnClose: true,
   askDownloadLocation: true,
+  startAllSessions: true,
   permissions: { notifications: "ask", microphone: "ask", camera: "ask" },
   rail: "sidebar",
 };

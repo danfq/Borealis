@@ -48,6 +48,10 @@ pub struct Settings {
     /// pick a location for every download instead of the downloads folder
     pub ask_download_location: bool,
 
+    /// start every session on launch so all accounts notify and count unread
+    /// chats, instead of starting each one when it is first opened
+    pub start_all_sessions: bool,
+
     pub permissions: Permissions,
 
     /// sidebar or topbar, only the sidebar collapses
@@ -59,6 +63,7 @@ impl Default for Settings {
         Self {
             minimize_on_close: true,
             ask_download_location: true,
+            start_all_sessions: true,
             permissions: Permissions::default(),
             rail: Rail::default(),
         }

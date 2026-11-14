@@ -157,6 +157,31 @@ pub async fn show_session(
     Ok(())
 }
 
+/// start the session of an account in the background, so it notifies and
+/// reports unread chats before it is first opened
+///
+/// @param id account id
+#[tauri::command]
+pub async fn start_session(app: AppHandle, id: String) -> Result<(), String> {
+    let id = parse(&id)?;
+
+    if app.get_webview(&label(&id)).is_some() {
+        return Ok(());
+    }
+
+    // child webviews start visible, so the session starts out tiny and is
+    // hidden right away, showing it later moves it into place
+    let bounds = Bounds {
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+    };
+
+    let webview = create(&app, &id, bounds).map_err(|e| e.to_string())?;
+    webview.hide().map_err(|e| e.to_string())
+}
+
 /// hide the visible session, it keeps running in the background
 #[tauri::command]
 pub async fn hide_session(
