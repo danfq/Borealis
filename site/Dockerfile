@@ -1,6 +1,7 @@
-# builds the website and serves it with nginx
+# builds the website and serves it with astro's node server
 #
-# the download links are read from the latest github release while building
+# the home page reads the latest github release on request, so new installers
+# show up within minutes without a redeploy
 
 FROM oven/bun:1 AS build
 WORKDIR /site
@@ -9,17 +10,26 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY . .
-
-# docker compares the feed's content, so the build below only reuses its cache
-# while no release has been published since
-ADD https://github.com/danfq/Borealis/releases.atom /tmp/releases.atom
 RUN bun run build
 
-FROM nginx:1-alpine
+# only what the server needs at runtime
+FROM oven/bun:1 AS deps
+WORKDIR /site
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /site/dist /usr/share/nginx/html
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
+FROM node:24-slim
+WORKDIR /site
+
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=80
+
+COPY --from=deps /site/node_modules ./node_modules
+COPY --from=build /site/dist ./dist
 
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -q --spider http://127.0.0.1/ || exit 1
+# a static file, so checks never reach github
+HEALTHCHECK --interval=30s --timeout=3s CMD ["node", "-e", "fetch('http://127.0.0.1/robots.txt').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+
+CMD ["node", "dist/server/entry.mjs"]
