@@ -66,10 +66,6 @@ memory:
 site: _site-deps
     cd site && bun run dev
 
-# build the website and deploy it to cloudflare
-site-deploy: _site-deps
-    cd site && bun run deploy
-
 # remove build artifacts and dependencies
 clean:
     rm -rf dist node_modules site/dist site/node_modules
