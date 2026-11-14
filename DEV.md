@@ -105,24 +105,24 @@ Without `APPLE_CERTIFICATE`, the DMG is only signed ad hoc and isn't notarized.
 
 ## Website
 
-The website at [getborealis.app](https://getborealis.app) lives in `site/`. It's a static [Astro](https://astro.build) site styled with [Tailwind CSS](https://tailwindcss.com), with its own dependencies.
+The website at [getborealis.app](https://getborealis.app) lives in `site/`. It's an [Astro](https://astro.build) site styled with [Tailwind CSS](https://tailwindcss.com), with its own dependencies.
 
 ```sh
 just site  # run the website locally with hot reload
 ```
 
-The download links and the version number come from the latest GitHub release when the site is built.
+The home page is rendered on every visit, so its download links, version and file sizes always match the latest GitHub release. The release is cached for 5 minutes, so GitHub isn't asked on every visit. Everything else on the site is static.
 
 ### Deploying
 
-The site runs on Coolify from `site/docker-compose.yml`, which builds the `Dockerfile` and serves the result with nginx. To set it up in Coolify:
+The site runs on Coolify from `site/docker-compose.yml`, which builds the `Dockerfile` and runs Astro's Node server on port 80. To set it up in Coolify:
 
 1. Add this repository as a **Docker Compose** resource, with `/site` as the base directory and `/docker-compose.yml` as the compose file.
 2. Set the domain of the `site` service to `https://getborealis.app`.
 3. Set the watch paths to `site/**`, so only changes to the site deploy it.
 4. Turn on automatic deploys.
 
-Coolify then deploys the site whenever `site/` changes on `main`. A release doesn't touch `site/`, so it doesn't start a deploy. The build checks the repository's releases feed, so any deploy after the installers are published picks them up, with or without cache.
+Coolify then deploys the site whenever `site/` changes on `main`. Releases don't need a deploy, the site shows them within a few minutes of being published.
 
 The DNS record for `getborealis.app` points at the Coolify server and isn't proxied, so Coolify can issue the HTTPS certificate.
 
