@@ -3,15 +3,15 @@
 //! the stock tauri about item only takes plain text credits, so the panel is
 //! opened directly to get a clickable website link
 
-use objc2::{MainThreadMarker, rc::Retained, runtime::AnyObject};
+use objc2::{AnyThread, MainThreadMarker, rc::Retained, runtime::AnyObject};
 use objc2_app_kit::{
-    NSAboutPanelOptionApplicationName, NSAboutPanelOptionApplicationVersion,
-    NSAboutPanelOptionCredits, NSApplication, NSColor, NSFont, NSFontAttributeName,
-    NSForegroundColorAttributeName, NSLinkAttributeName, NSMutableParagraphStyle,
-    NSParagraphStyleAttributeName, NSTextAlignment,
+    NSAboutPanelOptionApplicationIcon, NSAboutPanelOptionApplicationName,
+    NSAboutPanelOptionApplicationVersion, NSAboutPanelOptionCredits, NSApplication, NSColor,
+    NSFont, NSFontAttributeName, NSForegroundColorAttributeName, NSImage, NSLinkAttributeName,
+    NSMutableParagraphStyle, NSParagraphStyleAttributeName, NSTextAlignment,
 };
 use objc2_foundation::{
-    NSAttributedString, NSDictionary, NSMutableAttributedString, NSString, NSURL, ns_string,
+    NSAttributedString, NSData, NSDictionary, NSMutableAttributedString, NSString, NSURL, ns_string,
 };
 
 /// author shown in the credits
@@ -19,6 +19,9 @@ const AUTHOR: &str = "DanFQ";
 
 /// app website linked from the credits
 const WEBSITE: &str = "https://getborealis.app";
+
+/// app icon shown at the top of the panel, padded to the macos icon grid
+const ICON: &[u8] = include_bytes!("../icons/icon.icns");
 
 /// show the about panel
 ///
@@ -41,6 +44,12 @@ pub fn show(mtm: MainThreadMarker, name: &str, version: &str, copyright: Option<
     if let Some(copyright) = copyright {
         keys.push(ns_string!("Copyright"));
         values.push(NSString::from_str(copyright).into());
+    }
+
+    // the panel falls back to the process icon, which development builds lack
+    if let Some(icon) = NSImage::initWithData(NSImage::alloc(), &NSData::with_bytes(ICON)) {
+        keys.push(unsafe { NSAboutPanelOptionApplicationIcon });
+        values.push(icon.into());
     }
 
     let options = NSDictionary::from_retained_objects(&keys, &values);
