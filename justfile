@@ -54,6 +54,10 @@ test:
 # run every check used before committing
 ci: fmt-check lint check test
 
+# cut a release from the commits since the last one, ci builds and publishes it
+release *args: _deps
+    bun scripts/release.ts {{ args }}
+
 # report memory used by the running app and its webview processes
 memory:
     scripts/memory.sh

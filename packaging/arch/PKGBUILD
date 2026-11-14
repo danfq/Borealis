@@ -1,0 +1,30 @@
+# Maintainer: DanFQ <dan@danfq.dev>
+#
+# repackages the debian package tauri builds, see .github/workflows/release.yml
+# pkgver is bumped by scripts/release.ts
+
+pkgname=borealis
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Lightweight multi-account WhatsApp desktop client"
+arch=('x86_64')
+url="https://getborealis.app"
+license=('AGPL-3.0-or-later')
+depends=(
+  'cairo'
+  'gdk-pixbuf2'
+  'glib2'
+  'gtk3'
+  'hicolor-icon-theme'
+  'libsoup3'
+  'openssl'
+  'webkit2gtk-4.1'
+)
+options=('!strip' '!debug')
+source=("Borealis_${pkgver}_amd64.deb")
+sha256sums=('SKIP')
+
+package() {
+  # makepkg already unpacked the deb, its payload holds the whole file tree
+  bsdtar -xf data.tar.* -C "$pkgdir"
+}

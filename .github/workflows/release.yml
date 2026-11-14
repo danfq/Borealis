@@ -1,0 +1,146 @@
+# builds and publishes a release whenever `just release` pushes a version tag
+#
+# the release stays a draft until every installer is uploaded, so a failed
+# build never publishes a partial release
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  TAG: ${{ github.ref_name }}
+
+jobs:
+  draft:
+    name: Draft release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag matches the app version
+        run: |
+          version="v$(jq -r .version package.json)"
+          if [ "$version" != "$TAG" ]; then
+            echo "tag $TAG doesn't match the app version $version"
+            exit 1
+          fi
+
+      # checkout only fetches the commit, the notes live in the annotated tag,
+      # subject and body leave out the signature of signed tags
+      - name: Read the release notes from the tag
+        run: |
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
+          git tag --list --format='%(contents:subject)%0a%0a%(contents:body)' "$TAG" > notes.md
+
+      - name: Create the draft release
+        run: gh release create "$TAG" --draft --verify-tag --title "Borealis ${TAG#v}" --notes-file notes.md
+
+  build:
+    name: Build (${{ matrix.platform }})
+    needs: draft
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos
+            runner: macos-latest
+            targets: aarch64-apple-darwin,x86_64-apple-darwin
+            args: --target universal-apple-darwin --bundles dmg
+            artifacts: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          - platform: windows
+            runner: windows-latest
+            args: --bundles nsis
+            artifacts: src-tauri/target/release/bundle/nsis/*.exe
+          - platform: linux
+            runner: ubuntu-22.04
+            args: --bundles appimage,deb
+            artifacts: src-tauri/target/release/bundle/appimage/*.AppImage
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.targets }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl wget file libxdo-dev libssl-dev \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      # the apple variables only matter on macos, where the dmg is signed and notarized
+      - name: Build
+        run: bun run tauri build ${{ matrix.args }}
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Upload the installer
+        shell: bash
+        run: gh release upload "$TAG" ${{ matrix.artifacts }} --clobber
+
+      # the arch package is built from the debian one
+      - name: Keep the debian package for the arch build
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: src-tauri/target/release/bundle/deb/*.deb
+          retention-days: 1
+
+  arch:
+    name: Build (arch)
+    needs: build
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: deb
+          path: packaging/arch
+
+      # makepkg refuses to run as root, dependencies are only needed at runtime
+      - name: Build the package
+        run: |
+          pacman -Syu --noconfirm --needed github-cli
+          useradd --create-home builder
+          chown -R builder packaging/arch
+          cd packaging/arch
+          sudo -u builder makepkg --nodeps --noconfirm
+
+      - name: Upload the package
+        run: gh release upload "$TAG" packaging/arch/*.pkg.tar.zst --clobber --repo "$GITHUB_REPOSITORY"
+
+  publish:
+    name: Publish release
+    needs: [build, arch]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the release
+        run: gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY"
