@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "@fontsource-variable/figtree";
 
 /* set on the root before the first paint, see layout.astro */
 @custom-variant os-macos (&:where([data-os="macos"], [data-os="macos"] *));
