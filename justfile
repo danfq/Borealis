@@ -62,12 +62,25 @@ release *args: _deps
 memory:
     scripts/memory.sh
 
+# run the website with hot reload
+site: _site-deps
+    cd site && bun run dev
+
+# build the website and deploy it to cloudflare
+site-deploy: _site-deps
+    cd site && bun run deploy
+
 # remove build artifacts and dependencies
 clean:
-    rm -rf dist node_modules
+    rm -rf dist node_modules site/dist site/node_modules
     cargo clean --manifest-path {{ manifest }}
 
 # install dependencies only when missing
 [private]
 _deps:
     @[ -d node_modules ] || bun install
+
+# install website dependencies only when missing
+[private]
+_site-deps:
+    @[ -d site/node_modules ] || (cd site && bun install)
