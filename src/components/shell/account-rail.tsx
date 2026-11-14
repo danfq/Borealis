@@ -13,9 +13,11 @@ import {
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   PlusIcon,
+  SearchIcon,
   SettingsIcon,
 } from "lucide-react";
 import { AccountDialog } from "@/components/shell/account-dialog";
+import { SearchField } from "@/components/shell/search";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -99,9 +101,10 @@ export function AccountRail() {
 
   const dialog = <AccountDialog open={adding} onOpenChange={setAdding} />;
 
+  // sits inside the titlebar, which draws the background and border
   if (rail === "topbar") {
     return (
-      <nav className="flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar px-3 text-sidebar-foreground">
+      <nav className="flex h-full min-w-0 flex-1 items-center gap-2">
         <div className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto">
           {items}
 
@@ -114,6 +117,8 @@ export function AccountRail() {
             <PlusIcon className="size-5" />
           </RailButton>
         </div>
+
+        <TopbarSearch />
 
         <Separator orientation="vertical" className="my-3" />
 
@@ -396,6 +401,59 @@ function RenameField({ account, onDone, className }: RenameFieldProps) {
   );
 }
 
+/**
+ * search tucked behind a button, the field slides open next to it
+ */
+function TopbarSearch() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+
+  /**
+   * empty the field and slide it shut
+   */
+  function close() {
+    if (ref.current) ref.current.value = "";
+    setOpen(false);
+  }
+
+  /**
+   * slide the field open, or shut when it already is
+   */
+  function toggle() {
+    if (open) return close();
+
+    setOpen(true);
+    ref.current?.focus();
+  }
+
+  return (
+    <div className="flex shrink-0 items-center">
+      <div
+        data-open={open}
+        className="w-0 overflow-hidden opacity-0 transition-[width,opacity] duration-200 ease-out data-[open=true]:w-72 data-[open=true]:opacity-100"
+      >
+        <SearchField
+          ref={ref}
+          tabIndex={open ? undefined : -1}
+          className="w-72 pr-2"
+          onBlur={(event) => !event.currentTarget.value && close()}
+          onKeyDown={(event) => event.key === "Escape" && close()}
+        />
+      </div>
+
+      <RailButton
+        label="Search"
+        layout="topbar"
+        labelled={false}
+        pressed={open}
+        onClick={toggle}
+      >
+        <SearchIcon className="size-5" />
+      </RailButton>
+    </div>
+  );
+}
+
 type RailItemProps = EntryProps & {
   to: string;
   onContextMenu?: (event: MouseEvent) => void;
@@ -448,6 +506,11 @@ type RailButtonProps = EntryProps & {
    * shortcut shown at the end while labelled
    */
   hint?: string;
+
+  /**
+   * toggle state, shown at full opacity while pressed
+   */
+  pressed?: boolean;
   onClick: () => void;
 };
 
@@ -459,6 +522,7 @@ function RailButton({
   hint,
   layout,
   labelled,
+  pressed,
   onClick,
   children,
 }: RailButtonProps) {
@@ -467,8 +531,15 @@ function RailButton({
       <button
         type="button"
         aria-label={labelled ? undefined : label}
+        aria-pressed={pressed}
         onClick={onClick}
-        className={cn(ITEM, SIZE[layout], "opacity-60 hover:opacity-100")}
+        // focus stays put, so the search field doesn't blur shut before its toggle runs
+        onMouseDown={(event) => event.preventDefault()}
+        className={cn(
+          ITEM,
+          SIZE[layout],
+          pressed ? "opacity-100" : "opacity-60 hover:opacity-100",
+        )}
       >
         <Entry label={label} layout={layout} labelled={labelled}>
           {children}

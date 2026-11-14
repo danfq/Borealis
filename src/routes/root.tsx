@@ -6,28 +6,32 @@ import { useOpenAccountEvent } from "@/lib/accounts";
 import { useQuitShortcut } from "@/lib/app";
 import { useSettings } from "@/lib/settings";
 import { useSidebarShortcut } from "@/lib/sidebar";
-import { cn } from "@/lib/utils";
 
 /**
  * root layout shared by every route
  */
 export default function Root() {
   const { rail } = useSettings();
+  const topbar = rail === "topbar";
 
   useQuitShortcut();
-  useSidebarShortcut(rail === "sidebar");
+  useSidebarShortcut(!topbar);
   useOpenAccountEvent();
 
   return (
     <>
       <div className="flex h-full flex-col bg-background">
-        <Titlebar />
+        {/* the topbar lives in the titlebar, the sidebar next to the page */}
+        {topbar ? (
+          <Titlebar>
+            <AccountRail />
+          </Titlebar>
+        ) : (
+          <Titlebar />
+        )}
 
-        {/* the topbar sits under the titlebar, the sidebar next to the page */}
-        <div
-          className={cn("flex min-h-0 flex-1", rail === "topbar" && "flex-col")}
-        >
-          <AccountRail />
+        <div className="flex min-h-0 flex-1">
+          {!topbar && <AccountRail />}
 
           <main className="flex min-h-0 min-w-0 flex-1 flex-col">
             <Outlet />
