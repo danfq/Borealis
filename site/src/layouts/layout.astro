@@ -1,0 +1,75 @@
+---
+import "../styles/global.css";
+
+type Props = {
+  title: string;
+  description: string;
+};
+
+const { title, description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const image = new URL("/og.png", Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#0a0e1f" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Borealis" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={image} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!--
+      picks the visitor's system before the first paint, so the right download
+      and shortcuts show without flashing
+    -->
+    <script is:inline>
+      (() => {
+        const platform = (
+          navigator.userAgentData?.platform ??
+          navigator.platform ??
+          ""
+        ).toLowerCase();
+        const agent = navigator.userAgent.toLowerCase();
+        const mobile = /iphone|ipad|ipod|android/.test(agent);
+
+        let os = "other";
+
+        // ipads report themselves as macs, touch gives them away
+        if (
+          mobile ||
+          (platform.startsWith("mac") && navigator.maxTouchPoints > 1)
+        ) {
+          os = "other";
+        } else if (platform.startsWith("mac")) {
+          os = "macos";
+        } else if (platform.startsWith("win")) {
+          os = "windows";
+        } else if (platform.includes("linux")) {
+          os = "linux";
+        }
+
+        document.documentElement.dataset.os = os;
+        document.documentElement.dataset.keys =
+          os === "macos" || os === "other" ? "mac" : "pc";
+      })();
+    </script>
+  </head>
+  <body class="min-h-dvh overflow-x-clip">
+    <slot />
+  </body>
+</html>

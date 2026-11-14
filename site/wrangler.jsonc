@@ -1,0 +1,13 @@
+// static site served by cloudflare workers, see https://developers.cloudflare.com/workers/static-assets
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "borealis-site",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+  },
+  // cloudflare creates the dns records, the zone lives in the same account
+  "routes": [{ "pattern": "getborealis.app", "custom_domain": true }],
+  "workers_dev": false,
+}
