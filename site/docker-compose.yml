@@ -1,0 +1,8 @@
+# deployed by coolify, which routes getborealis.app to this service
+
+services:
+  site:
+    build: .
+    restart: unless-stopped
+    expose:
+      - "80"

@@ -9,7 +9,6 @@
     "check": "astro check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "deploy": "astro build && wrangler deploy",
     "astro": "astro"
   },
   "dependencies": {
@@ -24,7 +23,6 @@
     "@astrojs/check": "^0.9.12",
     "prettier": "^3.10.1",
     "prettier-plugin-astro": "^1.1.2",
-    "typescript": "~6.0.3",
-    "wrangler": "^4.162.0"
+    "typescript": "~6.0.3"
   }
 }
