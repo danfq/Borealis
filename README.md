@@ -100,6 +100,8 @@ The new version is written to `package.json`, `src-tauri/Cargo.toml`, `src-tauri
 
 The release stays a draft until every package is uploaded, then it is published with the notes stored in the tag.
 
+Apple notarizes the macOS build in the background, so the runner doesn't wait for it. The release starts with a note saying notarization is underway, and the [notarization workflow](.github/workflows/notarization.yml) checks on Apple every 10 minutes and updates that note once Apple is done. It turns itself on for each release and off again when nothing is pending.
+
 ### Signing secrets
 
 Signing and notarizing the macOS build needs these repository secrets:
