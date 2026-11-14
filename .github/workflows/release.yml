@@ -95,9 +95,18 @@ jobs:
         env:
           APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
 
-      # the apple variables only matter on macos, where the dmg is signed and notarized
+      # the apple variables only matter on macos, where the dmg is signed and
+      # notarized, without a certificate it is only signed ad hoc so it still
+      # opens on apple silicon, after confirming in the system settings
       - name: Build
-        run: bun run tauri build ${{ matrix.args }}
+        shell: bash
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_API_KEY APPLE_API_ISSUER APPLE_API_KEY_PATH
+            export APPLE_SIGNING_IDENTITY="-"
+          fi
+
+          bun run tauri build ${{ matrix.args }}
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
