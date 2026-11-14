@@ -14,5 +14,11 @@
         "trafficLightPosition": { "x": 16, "y": 20 }
       }
     ]
+  },
+  "bundle": {
+    "macOS": {
+      "minimumSystemVersion": "14.0",
+      "entitlements": "Entitlements.plist"
+    }
   }
 }
