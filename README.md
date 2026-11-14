@@ -21,6 +21,13 @@ Borealis runs every WhatsApp account in its own isolated WhatsApp Web session in
 - **Calls.** WhatsApp's voice and video calls are enabled on macOS, where sessions run on WebKit, the engine Safari uses.
 - **Native feel.** Native context menus, the macOS About panel and a Settings menu item, no focus rings, and colors that blend into WhatsApp.
 
+## Installation
+
+Download the installer for your platform from the [latest release](../../releases/latest).
+
+> [!NOTE]
+> macOS builds aren't notarized yet, so macOS warns that it can't verify Borealis the first time you open it. To open it anyway, go to **System Settings → Privacy & Security** and click **Open Anyway**.
+
 ## Keyboard shortcuts
 
 | Action                   | macOS                                     | Windows and Linux                             |
@@ -87,12 +94,12 @@ Minor and patch never go above 9. Going past 9 resets the segment to 0 and carri
 
 The new version is written to `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock` and `packaging/arch/PKGBUILD`, committed as `chore(release): vX.Y.Z` and tagged. Pushing the tag starts the [release workflow](.github/workflows/release.yml), which builds:
 
-| Platform | Package                                   |
-| -------- | ----------------------------------------- |
-| macOS    | Universal DMG, signed and notarized       |
-| Windows  | NSIS installer                            |
-| Linux    | AppImage                                  |
-| Arch     | pacman package, built from the Debian one |
+| Platform | Package                                                              |
+| -------- | -------------------------------------------------------------------- |
+| macOS    | Universal DMG, signed and notarized when the signing secrets are set |
+| Windows  | NSIS installer                                                       |
+| Linux    | AppImage                                                             |
+| Arch     | pacman package, built from the Debian one                            |
 
 The release stays a draft until every package is uploaded, then it is published with the notes stored in the tag.
 
@@ -109,7 +116,7 @@ Signing and notarizing the macOS build needs these repository secrets:
 | `APPLE_API_ISSUER`           | The issuer ID of that key                                                       |
 | `APPLE_API_PRIVATE_KEY`      | The contents of the key's `.p8` file                                            |
 
-Only the Account Holder can create a Developer ID certificate, from Xcode or the developer website. The API key can be created in App Store Connect, or with `asc web api-keys create`.
+Only the Account Holder can create a Developer ID certificate, from Xcode or the developer website. The API key can be created in App Store Connect, or with `asc web api-keys create`. Without `APPLE_CERTIFICATE`, the DMG is only signed ad hoc and isn't notarized.
 
 ## Project structure
 
