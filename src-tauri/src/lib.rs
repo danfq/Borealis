@@ -4,6 +4,8 @@ mod about;
 mod notifications;
 mod session;
 mod settings;
+#[cfg(target_os = "macos")]
+mod shortcuts;
 
 /// id of the about menu item
 #[cfg(target_os = "macos")]
@@ -91,6 +93,10 @@ pub fn run() {
             // clicked notifications open their chat
             #[cfg(target_os = "macos")]
             notifications::install(app.handle());
+
+            // sessions swallow keys while focused
+            #[cfg(target_os = "macos")]
+            shortcuts::install(app.handle());
 
             Ok(())
         })

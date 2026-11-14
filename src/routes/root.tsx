@@ -2,7 +2,7 @@ import { Outlet } from "react-router";
 import { AccountRail } from "@/components/shell/account-rail";
 import { PermissionPrompt } from "@/components/shell/permission-prompt";
 import { Titlebar } from "@/components/shell/titlebar";
-import { useOpenAccountEvent } from "@/lib/accounts";
+import { useAccountShortcuts, useOpenAccountEvent } from "@/lib/accounts";
 import { useQuitShortcut } from "@/lib/app";
 import { useSettings } from "@/lib/settings";
 import { useSidebarShortcut } from "@/lib/sidebar";
@@ -17,6 +17,7 @@ export default function Root() {
   useQuitShortcut();
   useSidebarShortcut(!topbar);
   useOpenAccountEvent();
+  useAccountShortcuts();
 
   return (
     <>
