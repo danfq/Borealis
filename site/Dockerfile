@@ -1,7 +1,7 @@
 # builds the website and serves it with nginx
 #
 # the download links are read from the latest github release while building,
-# so a new release needs a build without cache, see .github/workflows/site.yml
+# so a new release only shows up after a build without cache
 
 FROM oven/bun:1 AS build
 WORKDIR /site
