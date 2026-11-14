@@ -3,6 +3,8 @@
 //! every account gets its own webview and data store so logins stay isolated,
 //! the frontend reports where the session should sit and toggles visibility
 
+#[cfg(target_os = "macos")]
+use std::sync::LazyLock;
 use std::{path::Path, sync::Mutex, time::Duration};
 
 use serde::{Deserialize, Serialize};
@@ -19,9 +21,22 @@ use crate::settings::{self, Permissions, Policy};
 /// whatsapp web entry point
 const URL: &str = "https://web.whatsapp.com";
 
-/// chrome user agent, whatsapp web is built for chrome and turns away unknown browsers
+/// safari user agent matching the system webkit
+///
+/// whatsapp only sends the cross origin isolation headers webkit understands
+/// to safari, and calls need the shared memory that isolation unlocks
 #[cfg(target_os = "macos")]
-const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36";
+static USER_AGENT: LazyLock<String> = LazyLock::new(|| {
+    let version = safari_version().unwrap_or_else(|| SAFARI_VERSION.to_owned());
+
+    format!(
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/{version} Safari/605.1.15"
+    )
+});
+
+/// safari version claimed when the installed one can't be read
+#[cfg(target_os = "macos")]
+const SAFARI_VERSION: &str = "26.4";
 
 /// chrome user agent, whatsapp web is built for chrome and turns away unknown browsers
 #[cfg(target_os = "windows")]
@@ -43,6 +58,9 @@ pub const WINDOW: &str = "main";
 /// event telling the frontend a session waits for a permission answer
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub const PERMISSION_EVENT: &str = "permission-request";
+
+/// hides whatsapp's prompts to install its desktop app, the session is one
+const UPSELL: &str = include_str!("upsell.js");
 
 /// event telling the frontend how many chats of an account are unread
 const UNREAD_EVENT: &str = "unread";
@@ -280,6 +298,22 @@ fn data_directory(app: &AppHandle, id: &Uuid) -> tauri::Result<std::path::PathBu
         .join(id.to_string()))
 }
 
+/// version of the installed safari, which ships the same webkit as the sessions
+///
+/// @returns {String | None} version, none when safari can't be read
+#[cfg(target_os = "macos")]
+fn safari_version() -> Option<String> {
+    use objc2_foundation::{NSBundle, NSString, ns_string};
+
+    let safari = NSBundle::bundleWithPath(ns_string!("/Applications/Safari.app"))?;
+
+    safari
+        .objectForInfoDictionaryKey(ns_string!("CFBundleShortVersionString"))?
+        .downcast::<NSString>()
+        .ok()
+        .map(|version| version.to_string())
+}
+
 /// unread chats whatsapp puts in front of its title, like "(3) WhatsApp"
 ///
 /// @param title document title
@@ -328,7 +362,8 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
     let account = id.to_string();
 
     let builder = WebviewBuilder::new(label(id), WebviewUrl::External(URL.parse().unwrap()))
-        .user_agent(USER_AGENT)
+        .user_agent(&USER_AGENT)
+        .initialization_script(UPSELL)
         .on_navigation(move |url| {
             if is_internal(url) {
                 return true;
