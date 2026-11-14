@@ -32,20 +32,36 @@ function enqueue(command: string, args?: Record<string, unknown>) {
 }
 
 /**
+ * whether a hide waits for the current render to settle
+ */
+let hiding = false;
+
+/**
  * show the whatsapp session of an account in the given area
  *
  * @param id account id
  * @param bounds session area
  */
 export function showSession(id: string, bounds: Bounds) {
+  hiding = false;
   enqueue("show_session", { id, bounds });
 }
 
 /**
  * hide the visible session, it keeps running in the background
+ *
+ * waits a microtask so switching accounts never goes through an empty frame,
+ * the backend swaps sessions on show instead
  */
 export function hideSession() {
-  enqueue("hide_session");
+  hiding = true;
+
+  queueMicrotask(() => {
+    if (!hiding) return;
+
+    hiding = false;
+    enqueue("hide_session");
+  });
 }
 
 /**

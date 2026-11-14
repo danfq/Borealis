@@ -29,7 +29,10 @@ export function Session({ id }: SessionProps) {
       showSession(id, { x, y, width, height });
     };
 
-    // fires once on observe and on every resize after that
+    // right away so a pending hide from the previous account is cancelled,
+    // then on every resize
+    sync();
+
     const observer = new ResizeObserver(sync);
     observer.observe(element);
 

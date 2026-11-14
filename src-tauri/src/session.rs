@@ -3,7 +3,7 @@
 //! every account gets its own webview and data store so logins stay isolated,
 //! the frontend reports where the session should sit and toggles visibility
 
-use std::{path::Path, sync::Mutex};
+use std::{path::Path, sync::Mutex, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use tauri::{
@@ -32,6 +32,9 @@ const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KH
 
 /// domains the session may navigate within, anything else opens in the browser
 const DOMAINS: [&str; 2] = ["whatsapp.com", "whatsapp.net"];
+
+/// how long the previous session stays visible after switching
+const SWAP_DELAY: Duration = Duration::from_millis(100);
 
 /// label of the window hosting the sessions
 pub const WINDOW: &str = "main";
@@ -111,17 +114,34 @@ pub async fn show_session(
     };
 
     let mut active = sessions.0.lock().unwrap();
-
-    // only one session is visible at a time
-    if let Some(previous) = active.as_deref().filter(|previous| *previous != label)
-        && let Some(previous) = app.get_webview(previous)
-    {
-        previous.hide().map_err(|e| e.to_string())?;
-    }
+    let previous = active
+        .replace(label.clone())
+        .filter(|previous| *previous != label);
 
     place(&app, &webview, bounds).map_err(|e| e.to_string())?;
     webview.show().map_err(|e| e.to_string())?;
-    *active = Some(label);
+
+    // only one session is visible at a time, the previous one stays up until
+    // the new one had a moment to paint so switching never flashes
+    if let Some(previous) = previous {
+        let app = app.clone();
+
+        std::thread::spawn(move || {
+            std::thread::sleep(SWAP_DELAY);
+
+            let sessions = app.state::<Sessions>();
+            let active = sessions.0.lock().unwrap();
+
+            // switched back in the meantime
+            if active.as_deref() == Some(previous.as_str()) {
+                return;
+            }
+
+            if let Some(webview) = app.get_webview(&previous) {
+                let _ = webview.hide();
+            }
+        });
+    }
 
     Ok(())
 }
@@ -433,7 +453,7 @@ pub mod linux {
     };
 
     use super::{Bounds, PERMISSION_EVENT, Permission, Prompt, WINDOW};
-    use crate::settings::{self, Policy};
+    use crate::settings::{self, Policy, Rail};
 
     /// thickness of the resize border
     const BORDER: i32 = 5;
@@ -819,7 +839,7 @@ pub mod linux {
 
     /// app shortcuts, the window catches keys before either webview does
     ///
-    /// ctrl q quits and ctrl shift s toggles the sidebar
+    /// ctrl q quits and ctrl shift s toggles the sidebar, while there is one
     ///
     /// @param window toplevel window
     /// @param app app handle
@@ -835,7 +855,12 @@ pub mod linux {
                 return Propagation::Stop;
             }
 
-            if control && shift && key == gdk::keys::constants::s {
+            // the topbar can't collapse, so the key goes to the page instead
+            if control
+                && shift
+                && key == gdk::keys::constants::s
+                && settings::current(&app).rail == Rail::Sidebar
+            {
                 let _ = app.emit_to(WINDOW, SIDEBAR_EVENT, ());
                 return Propagation::Stop;
             }

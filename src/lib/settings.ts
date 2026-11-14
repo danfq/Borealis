@@ -51,7 +51,17 @@ export type Settings = {
   askDownloadLocation: boolean;
 
   permissions: Record<Permission, Policy>;
+
+  /**
+   * where the account rail sits
+   */
+  rail: Rail;
 };
+
+/**
+ * where the account rail sits, the topbar can't collapse
+ */
+export type Rail = "sidebar" | "topbar";
 
 /**
  * used until the backend answers and outside of tauri
@@ -60,6 +70,7 @@ const DEFAULTS: Settings = {
   minimizeOnClose: true,
   askDownloadLocation: true,
   permissions: { notifications: "ask", microphone: "ask", camera: "ask" },
+  rail: "sidebar",
 };
 
 /**
@@ -95,11 +106,14 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-if (isTauri()) {
-  invoke<Settings>("get_settings")
-    .then(commit)
-    .catch((error) => console.error("get_settings", error));
-}
+/**
+ * settles once the stored settings are loaded, so the layout doesn't jump
+ */
+export const settingsReady: Promise<void> = isTauri()
+  ? invoke<Settings>("get_settings")
+      .then(commit)
+      .catch((error) => console.error("get_settings", error))
+  : Promise.resolve();
 
 /**
  * change some settings and persist them

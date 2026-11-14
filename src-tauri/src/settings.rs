@@ -29,6 +29,15 @@ pub struct Permissions {
     pub camera: Policy,
 }
 
+/// where the account rail sits
+#[derive(Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Rail {
+    #[default]
+    Sidebar,
+    Topbar,
+}
+
 /// every user preference
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -40,6 +49,9 @@ pub struct Settings {
     pub ask_download_location: bool,
 
     pub permissions: Permissions,
+
+    /// sidebar or topbar, only the sidebar collapses
+    pub rail: Rail,
 }
 
 impl Default for Settings {
@@ -48,6 +60,7 @@ impl Default for Settings {
             minimize_on_close: true,
             ask_download_location: true,
             permissions: Permissions::default(),
+            rail: Rail::default(),
         }
     }
 }

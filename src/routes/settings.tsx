@@ -29,6 +29,7 @@ import {
   useSettings,
   type Permission,
   type Policy,
+  type Rail,
 } from "@/lib/settings";
 
 /**
@@ -38,6 +39,14 @@ const POLICIES: { value: Policy; label: string }[] = [
   { value: "ask", label: "Ask" },
   { value: "allow", label: "Allow" },
   { value: "deny", label: "Deny" },
+];
+
+/**
+ * places the account rail can sit
+ */
+const RAILS: { value: Rail; label: string }[] = [
+  { value: "sidebar", label: "Sidebar" },
+  { value: "topbar", label: "Top bar" },
 ];
 
 /**
@@ -58,6 +67,33 @@ export default function Settings() {
             <FieldLegend>General</FieldLegend>
 
             <FieldGroup>
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldLabel htmlFor="rail">Account list</FieldLabel>
+                  <FieldDescription>
+                    Show your accounts in a sidebar or in a bar along the top.
+                  </FieldDescription>
+                </FieldContent>
+                <Select
+                  items={RAILS}
+                  value={settings.rail}
+                  onValueChange={(rail) => rail && updateSettings({ rail })}
+                >
+                  <SelectTrigger id="rail" className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {RAILS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+
               <Field orientation="horizontal">
                 <FieldContent>
                   <FieldLabel htmlFor="minimize-on-close">
