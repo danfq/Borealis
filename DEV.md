@@ -28,6 +28,7 @@ Other useful recipes:
 | `just ci`      | Run every check used before committing                      |
 | `just memory`  | Report the memory used by the app and its webview processes |
 | `just release` | Cut a release, see [Releasing](#releasing)                  |
+| `just site`    | Run the website locally, see [Website](#website)            |
 | `just clean`   | Remove build artifacts and dependencies                     |
 
 Run `just` to list every available recipe.
@@ -51,6 +52,7 @@ bun run tauri build --debug --bundles app
 | `src-tauri/capabilities/` | What the app and the WhatsApp sessions are allowed to call        |
 | `scripts/`                | Release and notarization scripts                                  |
 | `packaging/`              | Packaging for distributions Tauri doesn't bundle for              |
+| `site/`                   | The website at [getborealis.app](https://getborealis.app)         |
 
 Tauri falls back to `index.html` for unknown paths, so browser-style URLs work in production too.
 
@@ -100,6 +102,26 @@ Signing and notarizing the macOS build needs these repository secrets:
 | `APPLE_API_PRIVATE_KEY`      | The contents of the key's `.p8` file                                            |
 
 Without `APPLE_CERTIFICATE`, the DMG is only signed ad hoc and isn't notarized.
+
+## Website
+
+The website at [getborealis.app](https://getborealis.app) lives in `site/`. It's a static [Astro](https://astro.build) site styled with [Tailwind CSS](https://tailwindcss.com), with its own dependencies, and is served by [Cloudflare Workers](https://developers.cloudflare.com/workers/static-assets/).
+
+```sh
+just site         # run the website locally with hot reload
+just site-deploy  # build the website and deploy it from your machine
+```
+
+The download links and the version number come from the latest GitHub release when the site is built. The [site workflow](.github/workflows/site.yml) builds and deploys the site whenever `site/` changes on `main`, and again after every release, so the links always point at the newest installers.
+
+Deploying needs these repository secrets. Without them, the site is only built.
+
+| Secret                  | Value                                                                    |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `CLOUDFLARE_API_TOKEN`  | An API token made from the **Edit Cloudflare Workers** template          |
+| `CLOUDFLARE_ACCOUNT_ID` | The ID of the Cloudflare account that holds the `getborealis.app` domain |
+
+The first deploy connects `getborealis.app` to the site and creates its DNS records, as set in `site/wrangler.jsonc`.
 
 ## Recommended IDE setup
 

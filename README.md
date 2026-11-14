@@ -22,7 +22,7 @@ Borealis keeps all of your WhatsApp accounts in one window, so you can switch be
 
 ## Installation
 
-Download Borealis for your computer from the [latest release](../../releases/latest).
+Download Borealis for your computer from [getborealis.app](https://getborealis.app) or the [latest release](../../releases/latest).
 
 | System  | Download       | How to install                                                                               |
 | ------- | -------------- | -------------------------------------------------------------------------------------------- |
