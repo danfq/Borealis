@@ -1,5 +1,7 @@
 #[cfg(target_os = "macos")]
 mod about;
+#[cfg(target_os = "macos")]
+mod notifications;
 mod session;
 mod settings;
 
@@ -85,6 +87,10 @@ pub fn run() {
             if let Some(main) = tauri::Manager::get_webview_window(app, "main") {
                 session::linux::install(&main)?;
             }
+
+            // clicked notifications open their chat
+            #[cfg(target_os = "macos")]
+            notifications::install(app.handle());
 
             Ok(())
         })

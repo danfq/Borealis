@@ -35,8 +35,9 @@ webkit2gtk = "2"
 [target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]
 rfd = { version = "0.18", default-features = false }
 
-# native about panel, already pulled in by tauri
+# native about panel and notifications, already pulled in by tauri
 [target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6"
 objc2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = [
   "std",
@@ -51,10 +52,23 @@ objc2-app-kit = { version = "0.3", default-features = false, features = [
 ] }
 objc2-foundation = { version = "0.3", default-features = false, features = [
   "std",
+  "NSArray",
   "NSAttributedString",
+  "NSBundle",
   "NSDictionary",
   "NSString",
   "NSURL",
+] }
+objc2-web-kit = { version = "0.3", default-features = false, features = [
+  "std",
+  "block2",
+  "objc2-app-kit",
+  "WKContentWorld",
+  "WKFrameInfo",
+  "WKScriptMessage",
+  "WKScriptMessageHandlerWithReply",
+  "WKSecurityOrigin",
+  "WKUserContentController",
 ] }
 
 

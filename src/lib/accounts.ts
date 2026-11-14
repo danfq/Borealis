@@ -1,4 +1,7 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { useNavigate } from "react-router";
+import { isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 /**
  * a whatsapp account managed by the app
@@ -17,6 +20,11 @@ const STORAGE_KEY = "borealis.accounts";
  * local storage key for the account opened last
  */
 const LAST_KEY = "borealis.accounts.last";
+
+/**
+ * event sent by the backend to bring up an account
+ */
+const OPEN_EVENT = "open-account";
 
 /**
  * subscribers notified on every change
@@ -145,6 +153,23 @@ export function useAccounts(): Account[] {
  */
 export function useAccount(id: string | undefined): Account | undefined {
   return useAccounts().find((account) => account.id === id);
+}
+
+/**
+ * open accounts the backend asks for, like when a notification is clicked
+ */
+export function useOpenAccountEvent() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isTauri()) return;
+
+    const unlisten = listen<string>(OPEN_EVENT, (event) =>
+      navigate(`/accounts/${event.payload}`),
+    );
+
+    return () => void unlisten.then((unlisten) => unlisten());
+  }, [navigate]);
 }
 
 /**

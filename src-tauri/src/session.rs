@@ -34,11 +34,11 @@ const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KH
 const DOMAINS: [&str; 2] = ["whatsapp.com", "whatsapp.net"];
 
 /// label of the window hosting the sessions
-const WINDOW: &str = "main";
+pub const WINDOW: &str = "main";
 
 /// event telling the frontend a session waits for a permission answer
-#[cfg(target_os = "linux")]
-const PERMISSION_EVENT: &str = "permission-request";
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+pub const PERMISSION_EVENT: &str = "permission-request";
 
 /// webviews forget granted notifications between launches, so ask again
 /// silently when they are allowed or whatsapp keeps showing its banner
@@ -61,10 +61,19 @@ pub struct Bounds {
 /// permissions governed by the settings
 #[derive(Clone, Copy, Serialize)]
 #[serde(rename_all = "lowercase")]
-enum Permission {
+pub enum Permission {
     Notifications,
     Microphone,
     Camera,
+}
+
+/// permission prompt sent to the frontend
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[derive(Clone, Serialize)]
+pub struct Prompt {
+    pub id: u32,
+    pub account: String,
+    pub permissions: Vec<Permission>,
 }
 
 impl Permission {
@@ -169,12 +178,15 @@ pub async fn remove_session(
 /// @param allow whether the permission is granted
 #[tauri::command]
 pub async fn answer_permission(app: AppHandle, id: u32, allow: bool) -> Result<(), String> {
-    // other platforms prompt natively so nothing waits on the frontend
-    #[cfg(not(target_os = "linux"))]
+    // windows prompts natively so nothing waits on the frontend
+    #[cfg(target_os = "windows")]
     let _ = (app, id, allow);
 
     #[cfg(target_os = "linux")]
     linux::answer(&app, id, allow).map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    crate::notifications::answer(&app, id, allow).map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -193,7 +205,7 @@ fn parse(id: &str) -> Result<Uuid, String> {
 /// @param id account id
 ///
 /// @returns {String} label
-fn label(id: &Uuid) -> String {
+pub fn label(id: &Uuid) -> String {
     format!("session-{id}")
 }
 
@@ -287,6 +299,10 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
             _ => true,
         });
 
+    // wkwebview never asks about notifications, so the app takes them over
+    #[cfg(target_os = "macos")]
+    let builder = builder.initialization_script(crate::notifications::script(app, id));
+
     // linux answers webkit directly so asking can go through the app
     #[cfg(not(target_os = "linux"))]
     let builder = {
@@ -324,6 +340,9 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
 
     #[cfg(target_os = "linux")]
     linux::adopt(&webview, id)?;
+
+    #[cfg(target_os = "macos")]
+    crate::notifications::adopt(&webview, id)?;
 
     Ok(webview)
 }
@@ -406,7 +425,6 @@ pub mod linux {
         glib::Propagation,
         prelude::*,
     };
-    use serde::Serialize;
     use tauri::{AppHandle, Emitter, Manager, Runtime, Webview, WebviewWindow};
     use uuid::Uuid;
     use webkit2gtk::{
@@ -414,7 +432,7 @@ pub mod linux {
         UserMediaPermissionRequest, UserMediaPermissionRequestExt, WebContextExt, WebViewExt,
     };
 
-    use super::{Bounds, PERMISSION_EVENT, Permission, WINDOW};
+    use super::{Bounds, PERMISSION_EVENT, Permission, Prompt, WINDOW};
     use crate::settings::{self, Policy};
 
     /// thickness of the resize border
@@ -453,14 +471,6 @@ pub mod linux {
 
         /// id of the next permission request
         static NEXT: Cell<u32> = const { Cell::new(0) };
-    }
-
-    /// permission prompt sent to the frontend
-    #[derive(Clone, Serialize)]
-    struct Prompt {
-        id: u32,
-        account: String,
-        permissions: Vec<Permission>,
     }
 
     /// wrap the main webview in an overlay that hosts the sessions

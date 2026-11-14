@@ -28,7 +28,8 @@ type Request = {
 /**
  * asks the user about permissions set to ask in the settings
  *
- * only linux routes requests here, other platforms prompt natively
+ * linux routes every request here and macos its notifications, other
+ * requests are prompted natively
  */
 export function PermissionPrompt() {
   const accounts = useAccounts();
