@@ -122,12 +122,7 @@ The site runs on Coolify from `site/docker-compose.yml`, which builds the `Docke
 3. Set the watch paths to `site/**`, so only changes to the site deploy it.
 4. Turn on automatic deploys.
 
-Coolify then deploys the site whenever `site/` changes on `main`. A release doesn't touch `site/`, so the [site workflow](.github/workflows/site.yml) asks Coolify for a deploy without cache after every release, which picks up the new installers. It needs these repository secrets, and does nothing without them:
-
-| Secret            | Value                                                                    |
-| ----------------- | ------------------------------------------------------------------------ |
-| `COOLIFY_WEBHOOK` | The deploy webhook of the site, found in its **Webhooks** tab in Coolify |
-| `COOLIFY_TOKEN`   | A Coolify API token with the **deploy** permission                       |
+Coolify then deploys the site whenever `site/` changes on `main`. A release doesn't touch `site/`, so after the installers are published, redeploy the site in Coolify without cache to pick them up.
 
 The DNS record for `getborealis.app` points at the Coolify server and isn't proxied, so Coolify can issue the HTTPS certificate.
 
