@@ -70,6 +70,45 @@ macOS only delivers notifications to bundled apps. With `just dev`, permission p
 bun run tauri build --debug --bundles app
 ```
 
+## Releasing
+
+```sh
+just release --dry-run  # show the commits and the version they lead to
+just release            # bump, commit, tag and push the release
+```
+
+The version is worked out from every commit since the last release tag, oldest first:
+
+- A breaking change (`feat!:` or a `BREAKING CHANGE:` footer) bumps the major version.
+- `feat` bumps the minor version.
+- Everything else bumps the patch version.
+
+Minor and patch never go above 9. Going past 9 resets the segment to 0 and carries one into the segment before it, so `0.1.9` becomes `0.2.0` and `0.9.9` becomes `1.0.0`. The major version has no limit. The first release ships the current version as it is.
+
+The new version is written to `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock` and `packaging/arch/PKGBUILD`, committed as `chore(release): vX.Y.Z` and tagged. Pushing the tag starts the [release workflow](.github/workflows/release.yml), which builds:
+
+| Platform | Package                                   |
+| -------- | ----------------------------------------- |
+| macOS    | Universal DMG, signed and notarized       |
+| Windows  | NSIS installer                            |
+| Linux    | AppImage                                  |
+| Arch     | pacman package, built from the Debian one |
+
+The release stays a draft until every package is uploaded, then it is published with the notes stored in the tag.
+
+### Signing secrets
+
+Signing and notarizing the macOS build needs these repository secrets:
+
+| Secret                       | Value                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------- |
+| `APPLE_CERTIFICATE`          | The Developer ID Application certificate, exported as `.p12` and base64 encoded |
+| `APPLE_CERTIFICATE_PASSWORD` | The password chosen when exporting the `.p12`                                   |
+| `APPLE_SIGNING_IDENTITY`     | The certificate's name, like `Developer ID Application: Name (TEAMID)`          |
+| `APPLE_ID`                   | The Apple account email                                                         |
+| `APPLE_PASSWORD`             | An [app-specific password](https://account.apple.com) for that account          |
+| `APPLE_TEAM_ID`              | The team ID from the [membership details](https://developer.apple.com/account)  |
+
 ## Project structure
 
 | Path                      | Contents                                                          |
@@ -87,3 +126,7 @@ WhatsApp sessions are remote pages, so every app command is declared in `src-tau
 ## Recommended IDE setup
 
 [VS Code](https://code.visualstudio.com) with the extensions listed in `.vscode/extensions.json`. Format on save is preconfigured: Prettier handles the frontend and rust-analyzer handles Rust.
+
+## License
+
+Borealis is licensed under the [GNU Affero General Public License v3.0](LICENSE).
