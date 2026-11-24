@@ -1,6 +1,6 @@
 [package]
 name = "borealis"
-version = "2.5.4"
+version = "3.4.1"
 description = "Lightweight multi-account WhatsApp desktop client"
 authors = ["DanFQ"]
 homepage = "https://getborealis.app"

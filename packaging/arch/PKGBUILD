@@ -4,7 +4,7 @@
 # pkgver is bumped by scripts/release.ts
 
 pkgname=borealis
-pkgver=2.5.4
+pkgver=3.4.1
 pkgrel=1
 pkgdesc="Lightweight multi-account WhatsApp desktop client"
 arch=('x86_64')
