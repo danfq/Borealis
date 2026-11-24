@@ -382,6 +382,9 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
     #[allow(clippy::needless_borrow)]
     let builder = WebviewBuilder::new(label(id), WebviewUrl::External(URL.parse().unwrap()))
         .user_agent(&USER_AGENT)
+        // tauri swallows dropped files to report them to the app, so whatsapp
+        // never saw them and couldn't attach them
+        .disable_drag_drop_handler()
         .initialization_script(UPSELL)
         .initialization_script(SEARCH)
         .on_navigation(move |url| {
