@@ -62,6 +62,12 @@ release *args: _deps
 memory:
     scripts/memory.sh
 
+# install the plasma widget from the repo and open it in a window
+widget:
+    kpackagetool6 --type Plasma/Applet --upgrade packaging/plasma/dev.danfq.borealis \
+        || kpackagetool6 --type Plasma/Applet --install packaging/plasma/dev.danfq.borealis
+    plasmawindowed dev.danfq.borealis
+
 # remove build artifacts and dependencies
 clean:
     rm -rf dist node_modules
