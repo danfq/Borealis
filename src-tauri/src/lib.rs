@@ -7,6 +7,8 @@ mod dbus;
 mod memory;
 #[cfg(target_os = "macos")]
 mod notifications;
+#[cfg(target_os = "linux")]
+mod plasma;
 mod search;
 mod session;
 mod settings;
@@ -150,6 +152,7 @@ pub fn run() {
             if let Some(bus) = bus {
                 bus.attach(app.handle());
                 tauri::Manager::manage(app, bus);
+                std::thread::spawn(plasma::install);
             }
 
             // accounts are a click away from the menu bar or the taskbar

@@ -37,6 +37,16 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/share/dbus-1/services/dev.danfq.Borealis.service": "../packaging/dbus/dev.danfq.Borealis.service",
+          "/usr/share/plasma/plasmoids/dev.danfq.borealis/metadata.json": "../packaging/plasma/dev.danfq.borealis/metadata.json",
+          "/usr/share/plasma/plasmoids/dev.danfq.borealis/contents/ui/main.qml": "../packaging/plasma/dev.danfq.borealis/contents/ui/main.qml",
+          "/usr/share/plasma/plasmoids/dev.danfq.borealis/contents/images/icon.svg": "../packaging/plasma/dev.danfq.borealis/contents/images/icon.svg"
+        }
+      }
+    }
   }
 }

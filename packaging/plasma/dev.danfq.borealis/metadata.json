@@ -1,0 +1,15 @@
+{
+  "KPlugin": {
+    "Authors": [{ "Name": "DanFQ" }],
+    "Category": "Online Services",
+    "Description": "Switch between your WhatsApp accounts in Borealis",
+    "Icon": "borealis",
+    "Id": "dev.danfq.borealis",
+    "License": "AGPL-3.0-or-later",
+    "Name": "Borealis",
+    "Version": "1.0",
+    "Website": "https://getborealis.app"
+  },
+  "KPackageStructure": "Plasma/Applet",
+  "X-Plasma-API-Minimum-Version": "6.0"
+}
