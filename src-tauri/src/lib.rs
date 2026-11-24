@@ -84,6 +84,14 @@ pub fn run() {
         unsafe { std::env::set_var("GTK_USE_PORTAL", "1") };
     }
 
+    // calls need shared memory, which webkitgtk keeps off unless asked,
+    // the web processes inherit it from here
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("JSC_useSharedArrayBuffer").is_none() {
+        // safety: nothing else is running before the builder starts
+        unsafe { std::env::set_var("JSC_useSharedArrayBuffer", "1") };
+    }
+
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(session::Sessions::default())

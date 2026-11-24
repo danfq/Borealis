@@ -567,8 +567,9 @@ pub mod linux {
     use tauri::{AppHandle, Emitter, Manager, Runtime, Webview, WebviewWindow};
     use uuid::Uuid;
     use webkit2gtk::{
-        CacheModel, NotificationPermissionRequest, PermissionRequest, PermissionRequestExt,
-        UserMediaPermissionRequest, UserMediaPermissionRequestExt, WebContextExt, WebViewExt,
+        CacheModel, DeviceInfoPermissionRequest, NotificationPermissionRequest, PermissionRequest,
+        PermissionRequestExt, SettingsExt, UserMediaPermissionRequest,
+        UserMediaPermissionRequestExt, WebContextExt, WebViewExt,
     };
 
     use super::{Bounds, PERMISSION_EVENT, Permission, Prompt, WINDOW};
@@ -703,6 +704,11 @@ pub mod linux {
                 context.set_cache_model(CacheModel::DocumentViewer);
             }
 
+            // calls need webrtc, which webkitgtk leaves off
+            if let Some(settings) = WebViewExt::settings(&webview) {
+                settings.set_enable_webrtc(true);
+            }
+
             OVERLAY.with_borrow(|overlay| {
                 let Some(overlay) = overlay else { return };
 
@@ -824,6 +830,19 @@ pub mod linux {
             }
         } else if request.is::<NotificationPermissionRequest>() {
             permissions.push(Permission::Notifications);
+        } else if request.is::<DeviceInfoPermissionRequest>() {
+            // calls list the microphones and cameras, which only reveals
+            // their names, so it follows whether either may be used at all
+            let settings = settings::current(app).permissions;
+            let media = [settings.microphone, settings.camera];
+
+            if media.iter().all(|policy| *policy == Policy::Deny) {
+                request.deny();
+            } else {
+                request.allow();
+            }
+
+            return true;
         }
 
         // screen sharing, location and anything else whatsapp doesn't need
