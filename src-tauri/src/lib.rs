@@ -1,5 +1,7 @@
 #[cfg(target_os = "macos")]
 mod about;
+#[cfg(target_os = "linux")]
+mod memory;
 #[cfg(target_os = "macos")]
 mod notifications;
 mod search;
@@ -137,6 +139,10 @@ pub fn run() {
                 let _ = window.minimize();
             }
         });
+
+    // web contexts take their memory limits when created, before setup runs
+    #[cfg(target_os = "linux")]
+    let builder = builder.plugin(memory::plugin());
 
     // other platforms keep the window free of a menu bar
     #[cfg(target_os = "macos")]
