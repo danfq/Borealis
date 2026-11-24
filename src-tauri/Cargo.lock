@@ -319,6 +319,7 @@ dependencies = [
  "tauri-plugin-opener",
  "uuid",
  "webkit2gtk",
+ "zbus",
 ]
 
 [[package]]

@@ -62,9 +62,11 @@ release *args: _deps
 memory:
     scripts/memory.sh
 
-# run the website with hot reload
-site: _site-deps
-    cd site && bun run dev
+# install the plasma widget from the repo and open it in a window
+widget:
+    kpackagetool6 --type Plasma/Applet --upgrade packaging/plasma/dev.danfq.borealis \
+        || kpackagetool6 --type Plasma/Applet --install packaging/plasma/dev.danfq.borealis
+    plasmawindowed dev.danfq.borealis
 
 # remove build artifacts and dependencies
 clean:

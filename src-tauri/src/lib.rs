@@ -1,12 +1,21 @@
 #[cfg(target_os = "macos")]
 mod about;
+mod accounts;
+#[cfg(target_os = "linux")]
+mod dbus;
+#[cfg(target_os = "linux")]
+mod memory;
 #[cfg(target_os = "macos")]
 mod notifications;
+#[cfg(target_os = "linux")]
+mod plasma;
 mod search;
 mod session;
 mod settings;
 #[cfg(target_os = "macos")]
 mod shortcuts;
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+mod tray;
 
 /// id of the about menu item
 #[cfg(target_os = "macos")]
@@ -15,10 +24,6 @@ const ABOUT: &str = "about";
 /// id of the settings menu item
 #[cfg(target_os = "macos")]
 const SETTINGS: &str = "settings";
-
-/// event asking the frontend to open the settings
-#[cfg(target_os = "macos")]
-const SETTINGS_EVENT: &str = "open-settings";
 
 /// default macos menu with the stock about item swapped for ours
 ///
@@ -69,6 +74,20 @@ fn show_about<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     });
 }
 
+/// bring the window back and to the front, wherever it was left
+///
+/// @param app app handle
+pub fn reveal<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    #[cfg(target_os = "macos")]
+    let _ = app.show();
+
+    if let Some(window) = tauri::Manager::get_window(app, session::WINDOW) {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
 /// leave the app, closing the window may only minimize it
 #[tauri::command]
 fn quit(app: tauri::AppHandle) {
@@ -84,11 +103,29 @@ pub fn run() {
         unsafe { std::env::set_var("GTK_USE_PORTAL", "1") };
     }
 
+    // calls need shared memory, which webkitgtk keeps off unless asked,
+    // the web processes inherit it from here
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("JSC_useSharedArrayBuffer").is_none() {
+        // safety: nothing else is running before the builder starts
+        unsafe { std::env::set_var("JSC_useSharedArrayBuffer", "1") };
+    }
+
+    // a second launch shows the running app, two would share the same sessions
+    #[cfg(target_os = "linux")]
+    let bus = match dbus::claim() {
+        dbus::Claim::Running => return,
+        dbus::Claim::Owned(bus) => Some(bus),
+        dbus::Claim::Unavailable => None,
+    };
+
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(session::Sessions::default())
+        .manage(accounts::Accounts::default())
         .invoke_handler(tauri::generate_handler![
             quit,
+            accounts::set_accounts,
             settings::get_settings,
             settings::set_settings,
             session::show_session,
@@ -100,7 +137,7 @@ pub fn run() {
             search::search_results,
             search::open_search_result,
         ])
-        .setup(|app| {
+        .setup(move |app| {
             let store = settings::Store::load(app.handle())?;
             tauri::Manager::manage(app, store);
 
@@ -109,6 +146,18 @@ pub fn run() {
             if let Some(main) = tauri::Manager::get_webview_window(app, "main") {
                 session::linux::install(&main)?;
             }
+
+            // the plasma widget lists the accounts through the bus
+            #[cfg(target_os = "linux")]
+            if let Some(bus) = bus {
+                bus.attach(app.handle());
+                tauri::Manager::manage(app, bus);
+                std::thread::spawn(plasma::install);
+            }
+
+            // accounts are a click away from the menu bar or the taskbar
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
+            tray::install(app.handle())?;
 
             // clicked notifications open their chat
             #[cfg(target_os = "macos")]
@@ -130,6 +179,10 @@ pub fn run() {
             }
         });
 
+    // web contexts take their memory limits when created, before setup runs
+    #[cfg(target_os = "linux")]
+    let builder = builder.plugin(memory::plugin());
+
     // other platforms keep the window free of a menu bar
     #[cfg(target_os = "macos")]
     let builder = builder.menu(menu).on_menu_event(|app, event| {
@@ -138,7 +191,7 @@ pub fn run() {
         }
 
         if event.id() == SETTINGS {
-            let _ = tauri::Emitter::emit_to(app, session::WINDOW, SETTINGS_EVENT, ());
+            let _ = tauri::Emitter::emit_to(app, session::WINDOW, session::SETTINGS_EVENT, ());
         }
     });
 

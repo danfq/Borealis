@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router";
-import { isTauri } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { isMac } from "@/lib/extras/platform";
 
@@ -42,6 +42,8 @@ const listeners = new Set<() => void>();
  */
 let accounts: Account[] = load();
 
+sync();
+
 /**
  * read persisted accounts from storage
  *
@@ -66,6 +68,19 @@ function commit(next: Account[]) {
   accounts = next;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   listeners.forEach((listener) => listener());
+  sync();
+}
+
+/**
+ * hand the accounts to the backend, which lists them in the menu bar, the
+ * tray and the plasma widget
+ */
+function sync() {
+  if (!isTauri()) return;
+
+  invoke("set_accounts", { accounts }).catch((error) =>
+    console.error("set_accounts", error),
+  );
 }
 
 /**

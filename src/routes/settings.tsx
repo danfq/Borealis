@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { quit } from "@/lib/app";
-import { isMac } from "@/lib/extras/platform";
+import { isMac, isWindows } from "@/lib/extras/platform";
 import {
   PERMISSIONS,
   setPolicy,
@@ -112,6 +112,25 @@ export default function Settings() {
                   }
                 />
               </Field>
+
+              {(isMac || isWindows) && (
+                <Field orientation="horizontal">
+                  <FieldContent>
+                    <FieldLabel htmlFor="menu-bar">
+                      {isMac ? "Show in menu bar" : "Show in system tray"}
+                    </FieldLabel>
+                    <FieldDescription>
+                      List your accounts and their unread chats so any of them
+                      is a click away.
+                    </FieldDescription>
+                  </FieldContent>
+                  <Switch
+                    id="menu-bar"
+                    checked={settings.menuBar}
+                    onCheckedChange={(menuBar) => updateSettings({ menuBar })}
+                  />
+                </Field>
+              )}
 
               <Field orientation="horizontal">
                 <FieldContent>

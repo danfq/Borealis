@@ -16,7 +16,10 @@ use tauri::{
 use tauri_plugin_opener::OpenerExt;
 use uuid::Uuid;
 
-use crate::settings::{self, Permissions, Policy};
+use crate::{
+    accounts,
+    settings::{self, Permissions, Policy},
+};
 
 /// whatsapp web entry point
 const URL: &str = "https://web.whatsapp.com";
@@ -58,6 +61,12 @@ pub const WINDOW: &str = "main";
 /// event telling the frontend a session waits for a permission answer
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub const PERMISSION_EVENT: &str = "permission-request";
+
+/// event asking the frontend to open an account
+pub const OPEN_EVENT: &str = "open-account";
+
+/// event asking the frontend to open the settings
+pub const SETTINGS_EVENT: &str = "open-settings";
 
 /// hides whatsapp's prompts to install its desktop app, the session is one
 const UPSELL: &str = include_str!("upsell.js");
@@ -148,6 +157,8 @@ pub async fn show_session(
         None => create(&app, &id, bounds).map_err(|e| e.to_string())?,
     };
 
+    accounts::set_active(&app, Some(id));
+
     let mut active = sessions.0.lock().unwrap();
     let previous = active
         .replace(label.clone())
@@ -212,6 +223,8 @@ pub async fn hide_session(
     app: AppHandle,
     sessions: tauri::State<'_, Sessions>,
 ) -> Result<(), String> {
+    accounts::set_active(&app, None);
+
     if let Some(label) = sessions.0.lock().unwrap().take()
         && let Some(webview) = app.get_webview(&label)
     {
@@ -377,9 +390,15 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
     let download = app.clone();
     let title = app.clone();
     let account = id.to_string();
+    let unread_id = *id;
 
+    // the user agent is a lazy string on macos, which needs the borrow
+    #[allow(clippy::needless_borrow)]
     let builder = WebviewBuilder::new(label(id), WebviewUrl::External(URL.parse().unwrap()))
         .user_agent(&USER_AGENT)
+        // tauri swallows dropped files to report them to the app, so whatsapp
+        // never saw them and couldn't attach them
+        .disable_drag_drop_handler()
         .initialization_script(UPSELL)
         .initialization_script(SEARCH)
         .on_navigation(move |url| {
@@ -409,9 +428,13 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
         })
         // whatsapp keeps the unread chats in its title
         .on_document_title_changed(move |_, document_title| {
+            let count = unread(&document_title);
+
+            accounts::set_unread(&title, unread_id, count);
+
             let unread = Unread {
                 account: account.clone(),
-                count: unread(&document_title),
+                count,
             };
 
             // only the app webview may learn about other accounts
@@ -562,11 +585,12 @@ pub mod linux {
     use tauri::{AppHandle, Emitter, Manager, Runtime, Webview, WebviewWindow};
     use uuid::Uuid;
     use webkit2gtk::{
-        CacheModel, NotificationPermissionRequest, PermissionRequest, PermissionRequestExt,
-        UserMediaPermissionRequest, UserMediaPermissionRequestExt, WebContextExt, WebViewExt,
+        CacheModel, DeviceInfoPermissionRequest, NotificationPermissionRequest, PermissionRequest,
+        PermissionRequestExt, SettingsExt, UserMediaPermissionRequest,
+        UserMediaPermissionRequestExt, WebContextExt, WebViewExt,
     };
 
-    use super::{Bounds, PERMISSION_EVENT, Permission, Prompt, WINDOW};
+    use super::{Bounds, PERMISSION_EVENT, Permission, Prompt, SETTINGS_EVENT, WINDOW};
     use crate::settings::{self, Policy, Rail};
 
     /// thickness of the resize border
@@ -583,9 +607,6 @@ pub mod linux {
 
     /// event asking the frontend to focus the search
     const SEARCH_EVENT: &str = "focus-search";
-
-    /// event asking the frontend to open the settings
-    const SETTINGS_EVENT: &str = "open-settings";
 
     /// resize handles and their cursors, corners first so they win the hit test
     const EDGES: [(WindowEdge, &str); 8] = [
@@ -696,6 +717,11 @@ pub mod linux {
             // and never goes back or forward
             if let Some(context) = webview.context() {
                 context.set_cache_model(CacheModel::DocumentViewer);
+            }
+
+            // calls need webrtc, which webkitgtk leaves off
+            if let Some(settings) = WebViewExt::settings(&webview) {
+                settings.set_enable_webrtc(true);
             }
 
             OVERLAY.with_borrow(|overlay| {
@@ -819,6 +845,19 @@ pub mod linux {
             }
         } else if request.is::<NotificationPermissionRequest>() {
             permissions.push(Permission::Notifications);
+        } else if request.is::<DeviceInfoPermissionRequest>() {
+            // calls list the microphones and cameras, which only reveals
+            // their names, so it follows whether either may be used at all
+            let settings = settings::current(app).permissions;
+            let media = [settings.microphone, settings.camera];
+
+            if media.iter().all(|policy| *policy == Policy::Deny) {
+                request.deny();
+            } else {
+                request.allow();
+            }
+
+            return true;
         }
 
         // screen sharing, location and anything else whatsapp doesn't need

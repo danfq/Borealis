@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=dev.danfq.Borealis
+Exec=/usr/bin/borealis

@@ -26,16 +26,21 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = "1"
 
-# session overlay and permissions, already pulled in by tauri
+# session overlay and permissions, already pulled in by tauri, and the bus
+# service of the plasma widget, already pulled in by the opener
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
 webkit2gtk = "2"
+zbus = "5"
 
-# download location dialog, linux uses gtk directly
+# download location dialog, linux uses gtk directly, and the menu bar or
+# tray icon, linux has the plasma widget instead
 [target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]
 rfd = { version = "0.18", default-features = false }
+tauri = { version = "2", features = ["tray-icon"] }
 
-# native about panel, notifications and shortcuts, already pulled in by tauri
+# native about panel, notifications, shortcuts and the menu bar item, already
+# pulled in by tauri
 [target.'cfg(target_os = "macos")'.dependencies]
 block2 = "0.6"
 objc2 = "0.6"
@@ -51,6 +56,7 @@ objc2-app-kit = { version = "0.3", default-features = false, features = [
   "NSImage",
   "NSParagraphStyle",
   "NSResponder",
+  "NSStatusItem",
   "NSText",
 ] }
 objc2-foundation = { version = "0.3", default-features = false, features = [

@@ -61,6 +61,11 @@ export type Settings = {
    * where the account rail sits
    */
   rail: Rail;
+
+  /**
+   * list the accounts in the menu bar on macos and the tray on windows
+   */
+  menuBar: boolean;
 };
 
 /**
@@ -77,6 +82,7 @@ const DEFAULTS: Settings = {
   startAllSessions: true,
   permissions: { notifications: "ask", microphone: "ask", camera: "ask" },
   rail: "sidebar",
+  menuBar: true,
 };
 
 /**

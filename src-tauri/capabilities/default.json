@@ -12,6 +12,7 @@
     "core:webview:allow-set-webview-focus",
     "opener:default",
     "allow-quit",
+    "allow-set-accounts",
     "allow-get-settings",
     "allow-set-settings",
     "allow-show-session",

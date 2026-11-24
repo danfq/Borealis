@@ -56,6 +56,9 @@ pub struct Settings {
 
     /// sidebar or topbar, only the sidebar collapses
     pub rail: Rail,
+
+    /// list the accounts in the menu bar on macos and the tray on windows
+    pub menu_bar: bool,
 }
 
 impl Default for Settings {
@@ -66,6 +69,7 @@ impl Default for Settings {
             start_all_sessions: true,
             permissions: Permissions::default(),
             rail: Rail::default(),
+            menu_bar: true,
         }
     }
 }
@@ -145,6 +149,22 @@ pub fn get_settings(store: tauri::State<'_, Store>) -> Settings {
 ///
 /// @param settings new settings
 #[tauri::command]
-pub fn set_settings(store: tauri::State<'_, Store>, settings: Settings) -> Result<(), String> {
-    store.save(settings)
+pub fn set_settings(
+    app: AppHandle,
+    store: tauri::State<'_, Store>,
+    settings: Settings,
+) -> Result<(), String> {
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    let menu_bar = settings.menu_bar;
+
+    store.save(settings)?;
+
+    // the icon follows the setting right away
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    crate::tray::show(&app, menu_bar);
+
+    #[cfg(target_os = "linux")]
+    let _ = app;
+
+    Ok(())
 }

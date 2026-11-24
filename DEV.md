@@ -27,6 +27,7 @@ Other useful recipes:
 | `just fmt`     | Format the frontend and backend                             |
 | `just ci`      | Run every check used before committing                      |
 | `just memory`  | Report the memory used by the app and its webview processes |
+| `just widget`  | Install the Plasma widget from the repo and open it         |
 | `just release` | Cut a release, see [Releasing](#releasing)                  |
 | `just site`    | Run the website locally, see [Website](#website)            |
 | `just clean`   | Remove build artifacts and dependencies                     |
@@ -51,14 +52,37 @@ bun run tauri build --debug --bundles app
 | `src-tauri/src/*.js`      | Scripts injected into the WhatsApp sessions                       |
 | `src-tauri/capabilities/` | What the app and the WhatsApp sessions are allowed to call        |
 | `scripts/`                | Release and notarization scripts                                  |
-| `packaging/`              | Packaging for distributions Tauri doesn't bundle for              |
-| `site/`                   | The website at [getborealis.app](https://getborealis.app)         |
+| `packaging/arch/`         | Packaging for distributions Tauri doesn't bundle for              |
+| `packaging/plasma/`       | The KDE Plasma widget                                             |
+| `packaging/dbus/`         | The D-Bus service that lets the widget start the app              |
 
 Tauri falls back to `index.html` for unknown paths, so browser-style URLs work in production too.
 
 WhatsApp sessions are remote pages, so every app command is declared in `src-tauri/build.rs` and has to be granted by a capability. The sessions can only report search results.
 
 Sessions swallow every key press while focused, so app shortcuts are caught natively on macOS and Linux. On Windows they only work while the app's own interface has focus.
+
+The frontend owns the accounts and hands them to the backend whenever they change, so the menu bar on macOS and the tray on Windows can list them with their unread chats.
+
+### Linux
+
+On Linux the app owns `dev.danfq.Borealis` on the session bus. A second launch finds the name taken, brings the running app to the front and exits. The object `/dev/danfq/Borealis` serves:
+
+| Method              | Description                                                     |
+| ------------------- | --------------------------------------------------------------- |
+| `State() → s`       | The accounts, their unread chats and the one on screen, as JSON |
+| `OpenAccount(s id)` | Bring up an account                                             |
+| `OpenSettings()`    | Bring up the settings                                           |
+| `Show()`            | Bring the window to the front                                   |
+| `Quit()`            | Leave the app                                                   |
+
+Try it with `gdbus call --session --dest dev.danfq.Borealis --object-path /dev/danfq/Borealis --method dev.danfq.Borealis.State`.
+
+The Plasma widget in `packaging/plasma/` talks to that service. The deb, and so the Arch package, install the widget and the D-Bus service file system wide. On Plasma, other release builds, like the AppImage, copy both into the user's data folder on launch. Development builds never do, so run `just widget` to try your changes.
+
+WebKitGTK only starts freeing memory once a web process nears a gigabyte, so web contexts are given lower memory limits as they are created, see `src-tauri/src/memory.rs`.
+
+WebKitGTK also needs WebRTC for calls. The app turns it on, but the WebKitGTK of most distributions, Arch and Ubuntu included, is built without it, so peer connections stay unavailable there.
 
 ## Releasing
 
