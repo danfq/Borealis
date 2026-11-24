@@ -1,0 +1,50 @@
+---
+import BrandIcon from "./brand-icon.astro";
+import { REPO_URL } from "../lib/release";
+
+/**
+ * links in the footer
+ */
+const LINKS = [
+  { href: REPO_URL, label: "GitHub" },
+  { href: `${REPO_URL}/releases`, label: "Releases" },
+  { href: `${REPO_URL}/issues`, label: "Report an issue" },
+  { href: `${REPO_URL}/blob/main/LICENSE`, label: "License" },
+];
+---
+
+<footer class="border-t border-white/5">
+  <div class="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:flex-row sm:items-start sm:justify-between">
+    <div class="max-w-sm">
+      <a href="/" class="flex items-center gap-2.5 font-semibold text-white">
+        <img src="/icon.svg" alt="" width="28" height="28" class="size-7" />
+        Borealis
+      </a>
+      <p class="mt-4 text-sm leading-relaxed text-slate-500">
+        Borealis is an independent project and isn't affiliated with WhatsApp or
+        Meta.
+      </p>
+    </div>
+
+    <ul class="flex flex-wrap gap-x-6 gap-y-3 text-sm">
+      {LINKS.map((link) => (
+        <li>
+          <a
+            href={link.href}
+            class="text-slate-400 transition-colors hover:text-white"
+          >
+            {link.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <div class="mx-auto flex max-w-6xl items-center gap-2 px-6 pb-12 text-xs text-slate-600">
+    <BrandIcon brand="github" class="size-3.5" />
+    Made in the open by
+    <a href="https://github.com/danfq" class="text-slate-400 hover:text-white">
+      danfq
+    </a>
+  </div>
+</footer>

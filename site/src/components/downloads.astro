@@ -1,0 +1,108 @@
+---
+import { Download } from "@lucide/astro";
+import BrandIcon from "./brand-icon.astro";
+import Section from "./section.astro";
+import { PLATFORMS } from "../lib/platforms";
+import {
+  formatDate,
+  formatSize,
+  latestRelease,
+  REPO_URL,
+} from "../lib/release";
+
+const release = await latestRelease();
+
+/**
+ * highlights the card for the visitor's system
+ */
+const DETECTED: Record<string, string> = {
+  macos: "os-macos:border-aurora-teal/50 os-macos:bg-aurora-teal/[0.06]",
+  windows: "os-windows:border-aurora-teal/50 os-windows:bg-aurora-teal/[0.06]",
+  linux: "os-linux:border-aurora-teal/50 os-linux:bg-aurora-teal/[0.06]",
+};
+
+/**
+ * shows the "your system" label on the detected card
+ */
+const LABEL: Record<string, string> = {
+  macos: "os-macos:inline-flex",
+  windows: "os-windows:inline-flex",
+  linux: "os-linux:inline-flex",
+};
+
+const description = release.version
+  ? `Version ${release.version}${release.date ? `, released ${formatDate(release.date)}` : ""}.`
+  : "Get the newest version for your computer.";
+---
+
+<Section
+  id="download"
+  eyebrow="Download"
+  title="Get Borealis for your computer"
+  description={description}
+>
+  <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {PLATFORMS.map((info) => {
+      const download = release.downloads[info.platform];
+
+      return (
+        <li
+          class:list={[
+            "flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-6",
+            DETECTED[info.platform],
+          ]}
+        >
+          <div class="flex items-center justify-between">
+            <BrandIcon brand={info.brand} class="size-8 text-white" />
+            <span
+              class:list={[
+                "hidden rounded-full bg-aurora-teal/15 px-2.5 py-0.5 text-xs font-semibold text-aurora-teal",
+                LABEL[info.platform],
+              ]}
+            >
+              Your system
+            </span>
+          </div>
+
+          <h3 class="mt-5 text-lg font-semibold text-white">{info.name}</h3>
+          <p class="mt-1 text-sm text-slate-400">{info.requires}</p>
+          <p
+            class="mt-4 flex-1 text-sm leading-relaxed text-slate-400 [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.8125rem] [&_code]:text-slate-200 [&_strong]:font-semibold [&_strong]:text-slate-200"
+            set:html={info.install}
+          />
+
+          <a
+            href={download?.url ?? release.url}
+            class="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/15"
+          >
+            <Download class="size-4" />
+            {info.file}
+            {download && (
+              <span class="font-normal text-slate-400">
+                {formatSize(download.size)}
+              </span>
+            )}
+          </a>
+        </li>
+      );
+    })}
+  </ul>
+
+  <p class="mt-10 text-center text-sm text-slate-500">
+    <a
+      href={release.url}
+      class="text-slate-300 underline-offset-4 hover:underline"
+    >
+      Release notes
+    </a>
+    <span aria-hidden="true" class="mx-2">
+      ·
+    </span>
+    <a
+      href={`${REPO_URL}/releases`}
+      class="text-slate-300 underline-offset-4 hover:underline"
+    >
+      All releases
+    </a>
+  </p>
+</Section>

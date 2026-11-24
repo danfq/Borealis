@@ -29,6 +29,7 @@ Other useful recipes:
 | `just memory`  | Report the memory used by the app and its webview processes |
 | `just widget`  | Install the Plasma widget from the repo and open it         |
 | `just release` | Cut a release, see [Releasing](#releasing)                  |
+| `just site`    | Run the website locally, see [Website](#website)            |
 | `just clean`   | Remove build artifacts and dependencies                     |
 
 Run `just` to list every available recipe.
@@ -125,6 +126,41 @@ Signing and notarizing the macOS build needs these repository secrets:
 | `APPLE_API_PRIVATE_KEY`      | The contents of the key's `.p8` file                                            |
 
 Without `APPLE_CERTIFICATE`, the DMG is only signed ad hoc and isn't notarized.
+
+## Website
+
+The website at [getborealis.app](https://getborealis.app) lives in `site/`. It's an [Astro](https://astro.build) site styled with [Tailwind CSS](https://tailwindcss.com), with its own dependencies.
+
+```sh
+just site  # run the website locally with hot reload
+```
+
+The home page shows the download links, version and file sizes of the latest GitHub release. The site asks GitHub for it once when it starts and keeps it in memory, and a GitHub webhook replaces it the moment a release is published, edited or deleted. Everything else on the site is static.
+
+### Deploying
+
+The site runs on Coolify from `site/docker-compose.yml`, which builds the `Dockerfile` and runs Astro's Node server on port 80. To set it up in Coolify:
+
+1. Add this repository as a **Docker Compose** resource, with `/site` as the base directory and `/docker-compose.yml` as the compose file.
+2. Set the domain of the `site` service to `https://getborealis.app`.
+3. Set the watch paths to `site/**`, so only changes to the site deploy it.
+4. Turn on automatic deploys.
+
+Coolify then deploys the site whenever `site/` changes on `main`. Releases don't need a deploy.
+
+The DNS record for `getborealis.app` points at the Coolify server and isn't proxied, so Coolify can issue the HTTPS certificate.
+
+### Release webhook
+
+1. Generate a secret, for example with `openssl rand -hex 32`.
+2. In Coolify, set the `GITHUB_WEBHOOK_SECRET` environment variable of the site to that secret and redeploy it.
+3. In the repository's **Settings > Webhooks**, add a webhook:
+   - **Payload URL:** `https://getborealis.app/api/release`
+   - **Content type:** `application/json`
+   - **Secret:** the same secret
+   - **Events:** choose **Let me select individual events** and pick only **Releases**
+
+GitHub sends a ping when the webhook is saved, which should show a green check in its **Recent Deliveries**. Without the secret, the webhook is turned off and the site only picks up new releases when it restarts.
 
 ## Recommended IDE setup
 

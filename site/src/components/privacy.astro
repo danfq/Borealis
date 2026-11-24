@@ -1,0 +1,71 @@
+---
+import { Code, EyeOff, Globe } from "@lucide/astro";
+import { REPO_URL } from "../lib/release";
+
+/**
+ * reasons borealis can be trusted with your chats
+ */
+const POINTS = [
+  {
+    icon: Globe,
+    title: "Straight to WhatsApp",
+    text: "Borealis opens WhatsApp Web directly, the same way your browser would.",
+  },
+  {
+    icon: EyeOff,
+    title: "Nothing collected",
+    text: "No accounts, no analytics, no tracking. Your messages never pass through anyone else.",
+  },
+  {
+    icon: Code,
+    title: "Open source",
+    text: "Every line of Borealis is public, so anyone can check what it does.",
+  },
+];
+---
+
+<section id="privacy" class="mx-auto max-w-6xl px-6 py-12">
+  <div class="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-night-light px-6 py-14 sm:px-14 sm:py-16">
+    <div
+      aria-hidden="true"
+      class="absolute -top-32 -right-32 -z-10 size-96 rounded-full bg-aurora-violet/20 blur-3xl"
+    ></div>
+    <div
+      aria-hidden="true"
+      class="absolute -bottom-40 -left-24 -z-10 size-96 rounded-full bg-aurora-green/10 blur-3xl"
+    ></div>
+
+    <div class="max-w-2xl">
+      <p class="text-sm font-semibold tracking-wide text-aurora-teal uppercase">
+        Privacy
+      </p>
+      <h2 class="mt-3 text-3xl font-bold tracking-tight text-balance text-white sm:text-4xl">
+        Your chats stay between you and WhatsApp
+      </h2>
+      <p class="mt-4 text-lg text-pretty text-slate-400">
+        Borealis is a window around WhatsApp Web, not a copy of it. Your
+        messages go straight between you and WhatsApp, and Borealis doesn't
+        collect anything.
+      </p>
+    </div>
+
+    <ul class="mt-12 grid gap-8 sm:grid-cols-3">
+      {POINTS.map((point) => (
+        <li>
+          <point.icon class="size-6 text-aurora-teal" />
+          <h3 class="mt-4 font-semibold text-white">{point.title}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-slate-400">
+            {point.text}
+          </p>
+        </li>
+      ))}
+    </ul>
+
+    <a
+      href={REPO_URL}
+      class="mt-12 inline-flex text-sm font-semibold text-white underline-offset-4 hover:underline"
+    >
+      Read the source on GitHub
+    </a>
+  </div>
+</section>

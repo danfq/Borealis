@@ -1,0 +1,114 @@
+---
+import Section from "./section.astro";
+
+/**
+ * app shortcuts, keys for macos first and windows and linux second
+ */
+const SHORTCUTS = [
+  {
+    action: "Switch to account 1 to 9",
+    mac: ["⌘", "1–9"],
+    pc: ["Ctrl", "1–9"],
+  },
+  { action: "Search", mac: ["⌘", "F"], pc: ["Ctrl", "F"] },
+  { action: "Open settings", mac: ["⌘", ","], pc: ["Ctrl", ","] },
+  {
+    action: "Show or hide the sidebar",
+    mac: ["⇧", "⌘", "S"],
+    pc: ["Ctrl", "Shift", "S"],
+  },
+  { action: "Quit", mac: ["⌘", "Q"], pc: ["Ctrl", "Q"] },
+];
+
+/**
+ * systems the keys can be shown for
+ */
+const SYSTEMS = [
+  {
+    keys: "mac",
+    label: "macOS",
+    active: "keys-mac:bg-white keys-mac:text-night",
+  },
+  {
+    keys: "pc",
+    label: "Windows and Linux",
+    active: "keys-pc:bg-white keys-pc:text-night",
+  },
+];
+---
+
+<Section
+  id="shortcuts"
+  eyebrow="Shortcuts"
+  title="Fly through your chats"
+  description="Keep your hands on the keyboard. WhatsApp's own shortcuts keep working too."
+>
+  <div class="mx-auto max-w-2xl">
+    <div class="flex justify-center">
+      <div
+        role="group"
+        aria-label="Show shortcuts for"
+        class="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1"
+      >
+        {SYSTEMS.map((system) => (
+          <button
+            type="button"
+            data-keys-toggle={system.keys}
+            class:list={[
+              "rounded-full px-4 py-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-white",
+              system.active,
+            ]}
+          >
+            {system.label}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <ul class="mt-8 divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/[0.03]">
+      {SHORTCUTS.map((shortcut) => (
+        <li class="flex items-center justify-between gap-4 px-6 py-4">
+          <span class="text-slate-300">{shortcut.action}</span>
+          <span class="hidden gap-1.5 keys-mac:flex">
+            {shortcut.mac.map((key) => (
+              <kbd>{key}</kbd>
+            ))}
+          </span>
+          <span class="hidden gap-1.5 keys-pc:flex">
+            {shortcut.pc.map((key) => (
+              <kbd>{key}</kbd>
+            ))}
+          </span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</Section>
+
+<script>
+  // the root holds the choice, so every list follows it
+  for (const button of document.querySelectorAll<HTMLElement>(
+    "[data-keys-toggle]",
+  )) {
+    button.addEventListener("click", () => {
+      document.documentElement.dataset.keys = button.dataset.keysToggle;
+      syncPressed();
+    });
+  }
+
+  /**
+   * mark the toggle for the shown keys as pressed
+   */
+  function syncPressed() {
+    for (const button of document.querySelectorAll<HTMLElement>(
+      "[data-keys-toggle]",
+    )) {
+      const pressed =
+        button.dataset.keysToggle === document.documentElement.dataset.keys;
+
+      button.setAttribute("aria-pressed", String(pressed));
+    }
+  }
+
+  syncPressed();
+</script>

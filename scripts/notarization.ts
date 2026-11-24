@@ -162,7 +162,8 @@ async function releases(): Promise<Release[]> {
 async function save(release: Release, body: string) {
   const repo = await repository();
 
-  await $`gh api --method PATCH repos/${repo}/releases/${release.id} --field body=@- < ${Buffer.from(body)}`.quiet();
+  // a draft loses its tag when edited without it
+  await $`gh api --method PATCH repos/${repo}/releases/${release.id} --raw-field tag_name=${release.tag_name} --field body=@- < ${Buffer.from(body)}`.quiet();
 }
 
 /**

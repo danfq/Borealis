@@ -1,0 +1,30 @@
+---
+import Downloads from "../components/downloads.astro";
+import Faq from "../components/faq.astro";
+import Features from "../components/features.astro";
+import Footer from "../components/footer.astro";
+import Hero from "../components/hero.astro";
+import Nav from "../components/nav.astro";
+import Privacy from "../components/privacy.astro";
+import Shortcuts from "../components/shortcuts.astro";
+import Layout from "../layouts/layout.astro";
+
+// rendered on request from the release kept in memory, see lib/release.ts
+export const prerender = false;
+---
+
+<Layout
+  title="Borealis: all your WhatsApp accounts in one window"
+  description="Borealis is a free, lightweight desktop app that keeps all of your WhatsApp accounts in one window, for macOS, Windows and Linux."
+>
+  <Nav />
+  <main>
+    <Hero />
+    <Features />
+    <Privacy />
+    <Downloads />
+    <Shortcuts />
+    <Faq />
+  </main>
+  <Footer />
+</Layout>

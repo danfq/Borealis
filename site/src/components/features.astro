@@ -1,0 +1,80 @@
+---
+import {
+  BellRing,
+  Feather,
+  Inbox,
+  PanelsTopLeft,
+  Search,
+  ShieldCheck,
+  UsersRound,
+  Video,
+} from "@lucide/astro";
+import Section from "./section.astro";
+
+/**
+ * features, same as in the readme
+ */
+const FEATURES = [
+  {
+    icon: UsersRound,
+    title: "All your accounts in one place",
+    text: "Add as many WhatsApp accounts as you need. They stay completely separate from each other.",
+  },
+  {
+    icon: Inbox,
+    title: "Unread counts at a glance",
+    text: "Every account shows how many chats are waiting for you.",
+  },
+  {
+    icon: Search,
+    title: "Search everything",
+    text: "Find people, messages and files across all of your accounts at once.",
+  },
+  {
+    icon: BellRing,
+    title: "Never miss a message",
+    text: "Get notifications from every account, even the ones you're not looking at.",
+  },
+  {
+    icon: Video,
+    title: "Voice and video calls",
+    text: "Call right from the app on macOS and Windows, just like on WhatsApp Web.",
+  },
+  {
+    icon: PanelsTopLeft,
+    title: "Your layout",
+    text: "Keep your accounts in a sidebar, or in a slim bar along the top.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "You're in control",
+    text: "Decide whether WhatsApp may use notifications, your microphone and your camera, or ask every time.",
+  },
+  {
+    icon: Feather,
+    title: "Light on your computer",
+    text: "Borealis uses the web view your system already has, so it starts fast and stays small.",
+  },
+];
+---
+
+<Section
+  id="features"
+  eyebrow="Features"
+  title="Everything you need, nothing you don't"
+  description="Borealis does one thing well: it keeps every WhatsApp account you have a click away."
+>
+  <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {FEATURES.map((feature) => (
+      <li class="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors hover:border-white/20 hover:bg-white/[0.05]">
+        <div class="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-linear-to-br from-aurora-green/15 via-aurora-teal/10 to-aurora-violet/15 text-aurora-teal">
+          <feature.icon class="size-5" />
+        </div>
+        <h3 class="mt-5 font-semibold text-white">{feature.title}</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">
+          {feature.text}
+        </p>
+      </li>
+    ))}
+  </ul>
+</Section>

@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* set on the root before the first paint, see layout.astro */
+@custom-variant os-macos (&:where([data-os="macos"], [data-os="macos"] *));
+@custom-variant os-windows (&:where([data-os="windows"], [data-os="windows"] *));
+@custom-variant os-linux (&:where([data-os="linux"], [data-os="linux"] *));
+@custom-variant os-other (&:where([data-os="other"], [data-os="other"] *));
+@custom-variant keys-mac (&:where([data-keys="mac"], [data-keys="mac"] *));
+@custom-variant keys-pc (&:where([data-keys="pc"], [data-keys="pc"] *));
+
+@theme {
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* the sky behind the bubble in the app icon */
+  --color-night: #0a0e1f;
+  --color-night-light: #121a33;
+
+  /* the aurora inside the bubble */
+  --color-aurora-green: #43e08c;
+  --color-aurora-teal: #28d3c9;
+  --color-aurora-blue: #5a8bff;
+  --color-aurora-violet: #b07bff;
+
+  --animate-drift: drift 24s ease-in-out infinite alternate;
+
+  @keyframes drift {
+    from {
+      transform: translate3d(-4%, 0, 0) rotate(-4deg) scale(1);
+    }
+    to {
+      transform: translate3d(4%, 3%, 0) rotate(4deg) scale(1.08);
+    }
+  }
+}
+
+@utility text-aurora {
+  @apply bg-linear-to-r from-aurora-green via-aurora-teal to-aurora-violet bg-clip-text text-transparent;
+}
+
+@layer base {
+  html {
+    @apply scroll-smooth bg-night font-sans text-slate-300 antialiased;
+    color-scheme: dark;
+  }
+
+  ::selection {
+    @apply bg-aurora-teal/30 text-white;
+  }
+
+  :focus-visible {
+    @apply rounded-md outline-2 outline-offset-2 outline-aurora-teal;
+  }
+
+  /* anchors land below the sticky nav */
+  [id] {
+    scroll-margin-top: 5rem;
+  }
+
+  kbd {
+    @apply inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 px-2 font-sans text-sm text-slate-200 shadow-[inset_0_-2px_0_rgb(255_255_255/0.06)];
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

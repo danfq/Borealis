@@ -70,10 +70,15 @@ widget:
 
 # remove build artifacts and dependencies
 clean:
-    rm -rf dist node_modules
+    rm -rf dist node_modules site/dist site/node_modules
     cargo clean --manifest-path {{ manifest }}
 
 # install dependencies only when missing
 [private]
 _deps:
     @[ -d node_modules ] || bun install
+
+# install website dependencies only when missing
+[private]
+_site-deps:
+    @[ -d site/node_modules ] || (cd site && bun install)

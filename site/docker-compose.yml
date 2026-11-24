@@ -1,0 +1,11 @@
+# deployed by coolify, which routes getborealis.app to this service
+
+services:
+  site:
+    build: .
+    restart: unless-stopped
+    expose:
+      - "80"
+    environment:
+      # shared with the release webhook on github, see DEV.md
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}

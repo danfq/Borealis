@@ -1,0 +1,522 @@
+---
+import {
+  CheckCheck,
+  EllipsisVertical,
+  FaceSlightlySmiling,
+  Mic,
+  PanelLeftClose,
+  Phone,
+  Plus,
+  Search,
+  Settings,
+  Video,
+} from "@lucide/astro";
+
+/**
+ * a chat in the chat list
+ */
+type Chat = {
+  name: string;
+  preview: string;
+  time: string;
+
+  /**
+   * unread messages, hidden at 0
+   */
+  unread?: number;
+};
+
+/**
+ * a message in the open chat
+ */
+type Message = {
+  text: string;
+  time: string;
+
+  /**
+   * sent by the account itself
+   */
+  out?: boolean;
+
+  /**
+   * sender shown above messages in groups
+   */
+  from?: string;
+};
+
+/**
+ * a made up account shown in the preview
+ */
+type Account = {
+  name: string;
+  avatar: string;
+  chats: Chat[];
+
+  /**
+   * the open chat is always the first one in the list
+   */
+  messages: Message[];
+
+  /**
+   * shown under the open chat's name
+   */
+  status: string;
+};
+
+/**
+ * accounts in the preview, the badge counts chats with unread messages like
+ * the app does
+ */
+const ACCOUNTS: Account[] = [
+  {
+    name: "Personal",
+    avatar: "bg-aurora-teal/25 text-aurora-teal",
+    status: "online",
+    chats: [
+      {
+        name: "Mum",
+        preview: "Are you coming for dinner on Sunday? 🍝",
+        time: "18:42",
+        unread: 2,
+      },
+      {
+        name: "Sofia",
+        preview: "haha that's exactly what I said",
+        time: "18:10",
+        unread: 1,
+      },
+      {
+        name: "Climbing crew",
+        preview: "Leo: Thursday 7pm at the usual wall?",
+        time: "17:55",
+      },
+      { name: "Ben", preview: "📷 Photo", time: "Yesterday" },
+      {
+        name: "Grandma",
+        preview: "Thank you for the flowers ❤️",
+        time: "Yesterday",
+      },
+      { name: "Noah", preview: "Sounds good, talk soon", time: "Monday" },
+    ],
+    messages: [
+      { text: "Hi love, how was your week?", time: "18:39" },
+      {
+        text: "Busy but good! Finally finished the big project",
+        time: "18:40",
+        out: true,
+      },
+      { text: "So proud of you 🎉", time: "18:41" },
+      { text: "Are you coming for dinner on Sunday? 🍝", time: "18:42" },
+    ],
+  },
+  {
+    name: "Work",
+    avatar: "bg-aurora-blue/25 text-aurora-blue",
+    status: "Maya, Jonas, Priya, You",
+    chats: [
+      {
+        name: "Design team",
+        preview: "Maya: Take a look when you get a chance 👀",
+        time: "10:24",
+        unread: 3,
+      },
+      {
+        name: "Daniel",
+        preview: "Can we move the sync to 3pm?",
+        time: "10:02",
+        unread: 1,
+      },
+      {
+        name: "Priya",
+        preview: "Sure, sending it over now",
+        time: "09:15",
+        unread: 1,
+      },
+      { name: "Clients", preview: "Thanks, invoice received", time: "09:47" },
+      {
+        name: "IT Support",
+        preview: "Your laptop is ready for pickup",
+        time: "Yesterday",
+      },
+      {
+        name: "Marketing",
+        preview: "Jonas: Launch post is scheduled ✅",
+        time: "Tuesday",
+      },
+    ],
+    messages: [
+      {
+        text: "Morning! The new onboarding mockups are up",
+        time: "10:21",
+        from: "Maya",
+      },
+      { text: "Love the new colours", time: "10:22", from: "Jonas" },
+      {
+        text: "On it, they look great at first glance",
+        time: "10:23",
+        out: true,
+      },
+      {
+        text: "Take a look when you get a chance 👀",
+        time: "10:24",
+        from: "Maya",
+      },
+    ],
+  },
+  {
+    name: "Shop",
+    avatar: "bg-aurora-violet/25 text-aurora-violet",
+    status: "last seen today at 11:30",
+    chats: [
+      {
+        name: "Emma Clarke",
+        preview: "Lovely, could you save two for me?",
+        time: "11:30",
+        unread: 1,
+      },
+      {
+        name: "Olivia",
+        preview: "Can I order a birthday cake?",
+        time: "11:02",
+        unread: 2,
+      },
+      {
+        name: "Flour supplier",
+        preview: "Delivery confirmed for Friday",
+        time: "08:12",
+      },
+      { name: "Lucas", preview: "Perfect, see you at 5!", time: "Yesterday" },
+      {
+        name: "Market stall",
+        preview: "Ana: Same spot as last week?",
+        time: "Sunday",
+      },
+    ],
+    messages: [
+      { text: "Hi! Is the sourdough available tomorrow?", time: "11:26" },
+      { text: "Hi Emma! Yes, fresh from 8am 🥖", time: "11:28", out: true },
+      { text: "Lovely, could you save two for me?", time: "11:30" },
+    ],
+  },
+];
+
+/**
+ * avatar colors for chats, picked by position
+ */
+const CHAT_COLORS = [
+  "bg-rose-400/20 text-rose-300",
+  "bg-amber-400/20 text-amber-300",
+  "bg-emerald-400/20 text-emerald-300",
+  "bg-sky-400/20 text-sky-300",
+  "bg-fuchsia-400/20 text-fuchsia-300",
+  "bg-lime-400/20 text-lime-300",
+];
+
+/**
+ * sender colors in groups
+ */
+const SENDER_COLORS = ["text-amber-300", "text-sky-300", "text-rose-300"];
+
+/**
+ * initials shown when an account has no picture, same as the app
+ *
+ * @param name display name
+ *
+ * @returns {string} up to two initials
+ */
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]!.toUpperCase())
+    .join("");
+}
+
+/**
+ * color of a group sender, stable across messages
+ *
+ * @param messages messages in the chat
+ * @param from sender name
+ *
+ * @returns {string} text color class
+ */
+function senderColor(messages: Message[], from: string): string {
+  const senders = [...new Set(messages.map((message) => message.from))].filter(
+    Boolean,
+  );
+
+  return SENDER_COLORS[senders.indexOf(from) % SENDER_COLORS.length]!;
+}
+---
+
+<figure data-demo aria-label="Interactive preview of Borealis" class="relative">
+  <!-- glow under the window -->
+  <div
+    aria-hidden="true"
+    class="absolute inset-x-12 -top-px h-px bg-linear-to-r from-transparent via-aurora-teal/70 to-transparent"
+  ></div>
+  <div
+    aria-hidden="true"
+    class="absolute -inset-x-8 top-10 -bottom-10 -z-10 rounded-[3rem] bg-linear-to-r from-aurora-green/20 via-aurora-blue/20 to-aurora-violet/20 blur-3xl"
+  ></div>
+
+  <div class="flex h-[32rem] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#161717] text-left text-[#e9edef] shadow-2xl shadow-black/60 sm:h-[38rem]">
+    <!-- titlebar, blends into the rail like in the app -->
+    <div class="flex h-9 shrink-0 items-center gap-2 bg-[#1d1f1f] px-4">
+      <span class="size-3 rounded-full bg-[#ff5f57]"></span>
+      <span class="size-3 rounded-full bg-[#febc2e]"></span>
+      <span class="size-3 rounded-full bg-[#28c840]"></span>
+    </div>
+
+    <div class="flex min-h-0 flex-1">
+      <!-- account rail -->
+      <div class="flex w-16 shrink-0 flex-col items-center gap-3 border-r border-white/10 bg-[#1d1f1f] py-3">
+        <div
+          role="tablist"
+          aria-label="Accounts"
+          class="flex w-full flex-col gap-2"
+        >
+          {ACCOUNTS.map((account, index) => {
+            const unread = account.chats.filter((chat) => chat.unread).length;
+
+            return (
+              <div class="relative flex w-full px-3">
+                <span
+                  data-indicator
+                  data-active={index === 0 ? "" : undefined}
+                  class="absolute top-1/2 left-0 h-6 w-1 -translate-y-1/2 scale-y-0 rounded-r-full bg-white transition-transform data-active:scale-y-100"
+                />
+                <button
+                  type="button"
+                  role="tab"
+                  id={`demo-tab-${index}`}
+                  aria-controls={`demo-pane-${index}`}
+                  aria-selected={index === 0 ? "true" : "false"}
+                  tabindex={index === 0 ? 0 : -1}
+                  aria-label={`${account.name}, ${unread} unread chats`}
+                  title={account.name}
+                  data-tab={index}
+                  class="group relative flex size-10 items-center justify-center rounded-full"
+                >
+                  <span
+                    class:list={[
+                      "flex size-10 items-center justify-center rounded-full text-sm font-semibold opacity-60 transition-opacity group-hover:opacity-100 group-aria-selected:opacity-100",
+                      account.avatar,
+                    ]}
+                  >
+                    {initials(account.name)}
+                  </span>
+                  <span class="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[0.625rem] font-semibold text-night ring-2 ring-[#1d1f1f]">
+                    {unread}
+                  </span>
+                </button>
+              </div>
+            );
+          })}
+
+          <div class="flex w-full px-3">
+            <span class="flex size-10 items-center justify-center rounded-full opacity-60">
+              <Plus class="size-5" />
+            </span>
+          </div>
+        </div>
+
+        <div class="mt-auto w-10 border-t border-white/10"></div>
+        <Settings class="m-2.5 size-5 opacity-60" />
+        <PanelLeftClose class="m-2.5 size-5 opacity-60" />
+      </div>
+
+      <!-- one whatsapp session per account -->
+      {ACCOUNTS.map((account, index) => {
+        const open = account.chats[0]!;
+
+        return (
+          <div
+            role="tabpanel"
+            id={`demo-pane-${index}`}
+            aria-labelledby={`demo-tab-${index}`}
+            data-pane={index}
+            data-active={index === 0 ? "" : undefined}
+            class="hidden min-w-0 flex-1 data-active:flex"
+          >
+            <!-- chat list -->
+            <div class="flex w-full min-w-0 flex-col border-r border-white/10 md:w-80 md:shrink-0 lg:w-96">
+              <div class="flex items-center justify-between px-5 pt-4 pb-3">
+                <span class="text-xl font-bold">Chats</span>
+                <EllipsisVertical class="size-5 text-[#aebac1]" />
+              </div>
+              <div class="px-3 pb-2">
+                <div class="flex h-9 items-center gap-3 rounded-full bg-[#2e2f2f] px-4 text-sm text-[#8696a0]">
+                  <Search class="size-4" />
+                  Search or start a new chat
+                </div>
+              </div>
+
+              <ul class="min-h-0 flex-1 overflow-hidden px-2">
+                {account.chats.map((chat, chatIndex) => (
+                  <li
+                    class:list={[
+                      "flex items-center gap-3 rounded-xl px-3 py-2.5",
+                      chatIndex === 0 && "md:bg-[#2e2f2f]",
+                    ]}
+                  >
+                    <span
+                      class:list={[
+                        "flex size-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                        CHAT_COLORS[chatIndex % CHAT_COLORS.length],
+                      ]}
+                    >
+                      {initials(chat.name)}
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-baseline justify-between gap-2">
+                        <span class="truncate">{chat.name}</span>
+                        <span
+                          class:list={[
+                            "shrink-0 text-xs",
+                            chat.unread ? "text-[#21c063]" : "text-[#8696a0]",
+                          ]}
+                        >
+                          {chat.time}
+                        </span>
+                      </div>
+                      <div class="mt-0.5 flex items-center justify-between gap-2">
+                        <span class="truncate text-sm text-[#8696a0]">
+                          {chat.preview}
+                        </span>
+                        {chat.unread && (
+                          <span class="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#21c063] px-1.5 text-xs font-semibold text-[#111b21]">
+                            {chat.unread}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <!-- open chat -->
+            <div class="hidden min-w-0 flex-1 flex-col bg-[#0b0c0c] md:flex">
+              <div class="flex h-16 shrink-0 items-center gap-3 border-b border-white/5 bg-[#161717] px-4">
+                <span
+                  class:list={[
+                    "flex size-10 items-center justify-center rounded-full text-sm font-semibold",
+                    CHAT_COLORS[0],
+                  ]}
+                >
+                  {initials(open.name)}
+                </span>
+                <div class="min-w-0 flex-1">
+                  <div class="truncate">{open.name}</div>
+                  <div class="truncate text-xs text-[#8696a0]">
+                    {account.status}
+                  </div>
+                </div>
+                <div class="flex items-center gap-5 text-[#aebac1]">
+                  <Video class="size-5" />
+                  <Phone class="size-5" />
+                  <Search class="size-5" />
+                </div>
+              </div>
+
+              <div class="flex min-h-0 flex-1 flex-col justify-end gap-1.5 overflow-hidden bg-[radial-gradient(rgb(255_255_255/0.035)_1px,transparent_1px)] bg-size-[20px_20px] px-6 py-5 lg:px-12">
+                <div class="mb-3 self-center rounded-lg bg-[#1d1f1f] px-3 py-1 text-xs text-[#8696a0]">
+                  Today
+                </div>
+                {account.messages.map((message) => (
+                  <div
+                    class:list={[
+                      "max-w-[75%] rounded-lg px-2.5 pt-1.5 pb-1 text-sm shadow-sm",
+                      message.out
+                        ? "self-end rounded-tr-sm bg-[#144d37]"
+                        : "self-start rounded-tl-sm bg-[#242626]",
+                    ]}
+                  >
+                    {message.from && (
+                      <div
+                        class:list={[
+                          "text-xs font-semibold",
+                          senderColor(account.messages, message.from),
+                        ]}
+                      >
+                        {message.from}
+                      </div>
+                    )}
+                    <span>{message.text}</span>
+                    <span class="float-right mt-1.5 ml-3 flex items-center gap-1 text-[0.6875rem] text-white/60">
+                      {message.time}
+                      {message.out && (
+                        <CheckCheck class="size-3.5 text-[#53bdeb]" />
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div class="flex shrink-0 items-center gap-3 bg-[#161717] px-4 py-3 text-[#aebac1]">
+                <Plus class="size-6" />
+                <div class="flex h-10 flex-1 items-center gap-3 rounded-full bg-[#2e2f2f] px-4 text-sm text-[#8696a0]">
+                  <FaceSlightlySmiling class="size-5" />
+                  Type a message
+                </div>
+                <Mic class="size-6" />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+
+  <figcaption class="mt-6 text-center text-sm text-slate-500">
+    Pick an account on the left to switch. Each one stays signed in on its own.
+  </figcaption>
+</figure>
+
+<script>
+  /**
+   * show an account in a preview and mark its rail entry as active
+   *
+   * @param demo preview element
+   * @param index account index
+   */
+  function select(demo: HTMLElement, index: string) {
+    for (const tab of demo.querySelectorAll<HTMLElement>("[data-tab]")) {
+      const active = tab.dataset.tab === index;
+
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+      tab.parentElement
+        ?.querySelector("[data-indicator]")
+        ?.toggleAttribute("data-active", active);
+    }
+
+    for (const pane of demo.querySelectorAll<HTMLElement>("[data-pane]")) {
+      pane.toggleAttribute("data-active", pane.dataset.pane === index);
+    }
+  }
+
+  for (const demo of document.querySelectorAll<HTMLElement>("[data-demo]")) {
+    const tabs = [...demo.querySelectorAll<HTMLElement>("[data-tab]")];
+
+    for (const tab of tabs) {
+      tab.addEventListener("click", () => select(demo, tab.dataset.tab!));
+
+      // arrow keys move between accounts, like any tab list
+      tab.addEventListener("keydown", (event) => {
+        const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
+
+        if (!step) return;
+        event.preventDefault();
+
+        const next =
+          tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length]!;
+
+        next.focus();
+        select(demo, next.dataset.tab!);
+      });
+    }
+  }
+</script>

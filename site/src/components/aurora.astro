@@ -1,0 +1,19 @@
+---
+/**
+ * soft aurora glow drifting behind a section, purely decorative
+ */
+---
+
+<div
+  aria-hidden="true"
+  class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[56rem] overflow-hidden"
+>
+  <div class="absolute top-[-18rem] left-1/2 h-[40rem] w-[72rem] -translate-x-1/2 opacity-60 blur-[120px]">
+    <div class="size-full animate-drift rounded-[50%] bg-linear-to-r from-aurora-green/70 via-aurora-teal/60 to-aurora-violet/70"></div>
+  </div>
+  <div class="absolute top-[-6rem] left-[12%] h-[22rem] w-[28rem] animate-drift rounded-full bg-aurora-blue/30 blur-[100px] [animation-delay:-8s]"></div>
+
+  <!-- faint stars, fading out towards the content -->
+  <div class="absolute inset-0 bg-[radial-gradient(rgb(255_255_255/0.5)_1px,transparent_1px)] mask-b-from-0% mask-b-to-70% bg-size-[48px_48px] opacity-25"></div>
+  <div class="absolute inset-x-0 bottom-0 h-64 bg-linear-to-b from-transparent to-night"></div>
+</div>
