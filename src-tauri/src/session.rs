@@ -378,6 +378,8 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
     let title = app.clone();
     let account = id.to_string();
 
+    // the user agent is a lazy string on macos, which needs the borrow
+    #[allow(clippy::needless_borrow)]
     let builder = WebviewBuilder::new(label(id), WebviewUrl::External(URL.parse().unwrap()))
         .user_agent(&USER_AGENT)
         .initialization_script(UPSELL)
