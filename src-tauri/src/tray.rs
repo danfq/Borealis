@@ -12,6 +12,7 @@ use tauri::{
 use crate::{
     accounts,
     session::{OPEN_EVENT, SETTINGS_EVENT, WINDOW},
+    settings,
 };
 
 /// id of the tray icon
@@ -51,15 +52,44 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         None => builder,
     };
 
-    builder.build(app)?;
+    let tray = builder.build(app)?;
+
+    // hidden before the event loop runs so it never flashes
+    if !settings::current(app).menu_bar {
+        tray.set_visible(false)?;
+    }
 
     Ok(())
 }
 
+/// show or hide the icon
+///
+/// @param app app handle
+/// @param visible whether the icon is shown
+pub fn show(app: &AppHandle, visible: bool) {
+    let Some(tray) = app.tray_by_id(TRAY) else {
+        return;
+    };
+
+    let _ = tray.set_visible(visible);
+
+    // changes made while hidden were skipped
+    if visible {
+        update(app);
+    }
+}
+
 /// rebuild the menu and the unread count from the current accounts
+///
+/// skipped while hidden since windows drops tooltips set on a hidden icon,
+/// showing it again runs it
 ///
 /// @param app app handle
 pub fn update(app: &AppHandle) {
+    if !settings::current(app).menu_bar {
+        return;
+    }
+
     let Some(tray) = app.tray_by_id(TRAY) else {
         return;
     };
