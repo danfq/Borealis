@@ -16,7 +16,9 @@ Borealis keeps all of your WhatsApp accounts in one window, so you can switch be
 - **Unread counts at a glance.** Every account shows how many chats are waiting for you.
 - **Search everything.** Find people, messages and files across all of your accounts at once.
 - **Never miss a message.** Get notifications from every account, even the ones you're not looking at.
+- **Always a click away.** Jump to any account or the settings from the menu bar on macOS, the taskbar on Windows, or a Plasma widget on KDE.
 - **Voice and video calls.** Call right from the app on macOS and Windows, just like on WhatsApp Web.
+- **Drag and drop.** Drop files on a chat to attach them, like in your browser.
 - **Your layout.** Keep your accounts in a sidebar, or in a slim bar along the top.
 - **You're in control.** Decide whether WhatsApp may use notifications, your microphone and your camera, or ask every time.
 
@@ -30,6 +32,16 @@ Download Borealis for your computer from the [latest release](../../releases/lat
 | Windows | `-setup.exe`   | Run the installer. If Windows warns you about it, choose **More info**, then **Run anyway**. |
 | Linux   | `.AppImage`    | Make it executable (`chmod +x Borealis*.AppImage`), then open it.                            |
 | Arch    | `.pkg.tar.zst` | Install it with `sudo pacman -U borealis-*.pkg.tar.zst`.                                     |
+
+Calls on Linux need a WebKitGTK built with WebRTC, which most distributions don't ship yet. Everything else works the same on every system.
+
+## Menu bar, taskbar and Plasma widget
+
+Every account is listed with its unread chats, next to the settings, so you can jump straight to it.
+
+- **macOS:** click the chat bubble in the menu bar. The number next to it counts the unread chats across all of your accounts.
+- **Windows:** click the Borealis icon in the taskbar's notification area.
+- **KDE Plasma:** right-click your panel or desktop, choose **Add Widgets**, and add **Borealis**. It can start Borealis for you when it isn't running.
 
 ## Keyboard shortcuts
 
