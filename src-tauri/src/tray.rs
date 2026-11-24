@@ -6,7 +6,7 @@
 use tauri::{
     AppHandle, Emitter,
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
-    tray::TrayIconBuilder,
+    tray::{TrayIcon, TrayIconBuilder},
 };
 
 use crate::{
@@ -54,10 +54,9 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
 
     let tray = builder.build(app)?;
 
-    // hidden before the event loop runs so it never flashes
-    if !settings::current(app).menu_bar {
-        tray.set_visible(false)?;
-    }
+    // set before the event loop runs so it never flashes, and always set since
+    // macos restores the visibility it saved for the item on its own
+    set_visible(&tray, settings::current(app).menu_bar)?;
 
     Ok(())
 }
@@ -71,12 +70,37 @@ pub fn show(app: &AppHandle, visible: bool) {
         return;
     };
 
-    let _ = tray.set_visible(visible);
+    let _ = set_visible(&tray, visible);
 
     // changes made while hidden were skipped
     if visible {
         update(app);
     }
+}
+
+/// show or hide the icon in place
+///
+/// macos only hides the status item, removing it would forget where it was
+/// moved in the menu bar and bring it back somewhere else
+///
+/// @param tray tray icon
+/// @param visible whether the icon is shown
+#[cfg(target_os = "macos")]
+fn set_visible(tray: &TrayIcon, visible: bool) -> tauri::Result<()> {
+    tray.with_inner_tray_icon(move |inner| {
+        if let Some(item) = inner.ns_status_item() {
+            item.setVisible(visible);
+        }
+    })
+}
+
+/// show or hide the icon
+///
+/// @param tray tray icon
+/// @param visible whether the icon is shown
+#[cfg(target_os = "windows")]
+fn set_visible(tray: &TrayIcon, visible: bool) -> tauri::Result<()> {
+    tray.set_visible(visible)
 }
 
 /// rebuild the menu and the unread count from the current accounts

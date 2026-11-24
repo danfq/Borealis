@@ -39,7 +39,8 @@ zbus = "5"
 rfd = { version = "0.18", default-features = false }
 tauri = { version = "2", features = ["tray-icon"] }
 
-# native about panel, notifications and shortcuts, already pulled in by tauri
+# native about panel, notifications, shortcuts and the menu bar item, already
+# pulled in by tauri
 [target.'cfg(target_os = "macos")'.dependencies]
 block2 = "0.6"
 objc2 = "0.6"
@@ -55,6 +56,7 @@ objc2-app-kit = { version = "0.3", default-features = false, features = [
   "NSImage",
   "NSParagraphStyle",
   "NSResponder",
+  "NSStatusItem",
   "NSText",
 ] }
 objc2-foundation = { version = "0.3", default-features = false, features = [
