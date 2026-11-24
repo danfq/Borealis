@@ -31,9 +31,11 @@ uuid = "1"
 gtk = "0.18"
 webkit2gtk = "2"
 
-# download location dialog, linux uses gtk directly
+# download location dialog, linux uses gtk directly, and the menu bar or
+# tray icon, linux has the plasma widget instead
 [target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]
 rfd = { version = "0.18", default-features = false }
+tauri = { version = "2", features = ["tray-icon"] }
 
 # native about panel, notifications and shortcuts, already pulled in by tauri
 [target.'cfg(target_os = "macos")'.dependencies]

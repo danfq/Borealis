@@ -1,5 +1,6 @@
 #[cfg(target_os = "macos")]
 mod about;
+mod accounts;
 #[cfg(target_os = "linux")]
 mod memory;
 #[cfg(target_os = "macos")]
@@ -9,6 +10,8 @@ mod session;
 mod settings;
 #[cfg(target_os = "macos")]
 mod shortcuts;
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+mod tray;
 
 /// id of the about menu item
 #[cfg(target_os = "macos")]
@@ -17,10 +20,6 @@ const ABOUT: &str = "about";
 /// id of the settings menu item
 #[cfg(target_os = "macos")]
 const SETTINGS: &str = "settings";
-
-/// event asking the frontend to open the settings
-#[cfg(target_os = "macos")]
-const SETTINGS_EVENT: &str = "open-settings";
 
 /// default macos menu with the stock about item swapped for ours
 ///
@@ -71,6 +70,20 @@ fn show_about<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     });
 }
 
+/// bring the window back and to the front, wherever it was left
+///
+/// @param app app handle
+pub fn reveal<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    #[cfg(target_os = "macos")]
+    let _ = app.show();
+
+    if let Some(window) = tauri::Manager::get_window(app, session::WINDOW) {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
 /// leave the app, closing the window may only minimize it
 #[tauri::command]
 fn quit(app: tauri::AppHandle) {
@@ -97,8 +110,10 @@ pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(session::Sessions::default())
+        .manage(accounts::Accounts::default())
         .invoke_handler(tauri::generate_handler![
             quit,
+            accounts::set_accounts,
             settings::get_settings,
             settings::set_settings,
             session::show_session,
@@ -119,6 +134,10 @@ pub fn run() {
             if let Some(main) = tauri::Manager::get_webview_window(app, "main") {
                 session::linux::install(&main)?;
             }
+
+            // accounts are a click away from the menu bar or the taskbar
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
+            tray::install(app.handle())?;
 
             // clicked notifications open their chat
             #[cfg(target_os = "macos")]
@@ -152,7 +171,7 @@ pub fn run() {
         }
 
         if event.id() == SETTINGS {
-            let _ = tauri::Emitter::emit_to(app, session::WINDOW, SETTINGS_EVENT, ());
+            let _ = tauri::Emitter::emit_to(app, session::WINDOW, session::SETTINGS_EVENT, ());
         }
     });
 

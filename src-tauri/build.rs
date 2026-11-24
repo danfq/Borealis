@@ -4,6 +4,7 @@
 /// sessions can only reach what their capability grants
 const COMMANDS: &[&str] = &[
     "quit",
+    "set_accounts",
     "get_settings",
     "set_settings",
     "show_session",

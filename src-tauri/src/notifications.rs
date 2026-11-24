@@ -25,7 +25,7 @@ use tauri::{AppHandle, Emitter, Manager, Webview};
 use uuid::Uuid;
 
 use crate::{
-    session::{self, PERMISSION_EVENT, Permission, Prompt, WINDOW},
+    session::{self, OPEN_EVENT, PERMISSION_EVENT, Permission, Prompt, WINDOW},
     settings::{self, Policy},
 };
 
@@ -37,9 +37,6 @@ const HANDLER: &str = "borealis";
 
 /// event the shim listens to for clicks
 const CLICK_EVENT: &str = "borealis-notification-click";
-
-/// event asking the frontend to open an account
-const OPEN_EVENT: &str = "open-account";
 
 /// only whatsapp itself may talk to the app
 const HOST: &str = "web.whatsapp.com";
@@ -536,12 +533,7 @@ fn open(app: &AppHandle, response: &AnyObject) {
         return;
     };
 
-    let _ = app.show();
-
-    if let Some(window) = app.get_window(WINDOW) {
-        let _ = window.unminimize();
-        let _ = window.set_focus();
-    }
+    crate::reveal(app);
 
     let _ = app.emit_to(WINDOW, OPEN_EVENT, account.to_string());
 

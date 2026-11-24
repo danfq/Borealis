@@ -16,7 +16,10 @@ use tauri::{
 use tauri_plugin_opener::OpenerExt;
 use uuid::Uuid;
 
-use crate::settings::{self, Permissions, Policy};
+use crate::{
+    accounts,
+    settings::{self, Permissions, Policy},
+};
 
 /// whatsapp web entry point
 const URL: &str = "https://web.whatsapp.com";
@@ -58,6 +61,13 @@ pub const WINDOW: &str = "main";
 /// event telling the frontend a session waits for a permission answer
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub const PERMISSION_EVENT: &str = "permission-request";
+
+/// event asking the frontend to open an account
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+pub const OPEN_EVENT: &str = "open-account";
+
+/// event asking the frontend to open the settings
+pub const SETTINGS_EVENT: &str = "open-settings";
 
 /// hides whatsapp's prompts to install its desktop app, the session is one
 const UPSELL: &str = include_str!("upsell.js");
@@ -148,6 +158,8 @@ pub async fn show_session(
         None => create(&app, &id, bounds).map_err(|e| e.to_string())?,
     };
 
+    accounts::set_active(&app, Some(id));
+
     let mut active = sessions.0.lock().unwrap();
     let previous = active
         .replace(label.clone())
@@ -212,6 +224,8 @@ pub async fn hide_session(
     app: AppHandle,
     sessions: tauri::State<'_, Sessions>,
 ) -> Result<(), String> {
+    accounts::set_active(&app, None);
+
     if let Some(label) = sessions.0.lock().unwrap().take()
         && let Some(webview) = app.get_webview(&label)
     {
@@ -377,6 +391,7 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
     let download = app.clone();
     let title = app.clone();
     let account = id.to_string();
+    let unread_id = *id;
 
     // the user agent is a lazy string on macos, which needs the borrow
     #[allow(clippy::needless_borrow)]
@@ -414,9 +429,13 @@ fn create(app: &AppHandle, id: &Uuid, bounds: Bounds) -> tauri::Result<Webview> 
         })
         // whatsapp keeps the unread chats in its title
         .on_document_title_changed(move |_, document_title| {
+            let count = unread(&document_title);
+
+            accounts::set_unread(&title, unread_id, count);
+
             let unread = Unread {
                 account: account.clone(),
-                count: unread(&document_title),
+                count,
             };
 
             // only the app webview may learn about other accounts
@@ -572,7 +591,7 @@ pub mod linux {
         UserMediaPermissionRequestExt, WebContextExt, WebViewExt,
     };
 
-    use super::{Bounds, PERMISSION_EVENT, Permission, Prompt, WINDOW};
+    use super::{Bounds, PERMISSION_EVENT, Permission, Prompt, SETTINGS_EVENT, WINDOW};
     use crate::settings::{self, Policy, Rail};
 
     /// thickness of the resize border
@@ -589,9 +608,6 @@ pub mod linux {
 
     /// event asking the frontend to focus the search
     const SEARCH_EVENT: &str = "focus-search";
-
-    /// event asking the frontend to open the settings
-    const SETTINGS_EVENT: &str = "open-settings";
 
     /// resize handles and their cursors, corners first so they win the hit test
     const EDGES: [(WindowEdge, &str); 8] = [
