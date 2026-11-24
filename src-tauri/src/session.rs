@@ -63,7 +63,6 @@ pub const WINDOW: &str = "main";
 pub const PERMISSION_EVENT: &str = "permission-request";
 
 /// event asking the frontend to open an account
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub const OPEN_EVENT: &str = "open-account";
 
 /// event asking the frontend to open the settings

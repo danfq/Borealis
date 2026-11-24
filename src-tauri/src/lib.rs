@@ -2,6 +2,8 @@
 mod about;
 mod accounts;
 #[cfg(target_os = "linux")]
+mod dbus;
+#[cfg(target_os = "linux")]
 mod memory;
 #[cfg(target_os = "macos")]
 mod notifications;
@@ -107,6 +109,14 @@ pub fn run() {
         unsafe { std::env::set_var("JSC_useSharedArrayBuffer", "1") };
     }
 
+    // a second launch shows the running app, two would share the same sessions
+    #[cfg(target_os = "linux")]
+    let bus = match dbus::claim() {
+        dbus::Claim::Running => return,
+        dbus::Claim::Owned(bus) => Some(bus),
+        dbus::Claim::Unavailable => None,
+    };
+
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(session::Sessions::default())
@@ -125,7 +135,7 @@ pub fn run() {
             search::search_results,
             search::open_search_result,
         ])
-        .setup(|app| {
+        .setup(move |app| {
             let store = settings::Store::load(app.handle())?;
             tauri::Manager::manage(app, store);
 
@@ -133,6 +143,13 @@ pub fn run() {
             #[cfg(target_os = "linux")]
             if let Some(main) = tauri::Manager::get_webview_window(app, "main") {
                 session::linux::install(&main)?;
+            }
+
+            // the plasma widget lists the accounts through the bus
+            #[cfg(target_os = "linux")]
+            if let Some(bus) = bus {
+                bus.attach(app.handle());
+                tauri::Manager::manage(app, bus);
             }
 
             // accounts are a click away from the menu bar or the taskbar

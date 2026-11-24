@@ -26,10 +26,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = "1"
 
-# session overlay and permissions, already pulled in by tauri
+# session overlay and permissions, already pulled in by tauri, and the bus
+# service of the plasma widget, already pulled in by the opener
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
 webkit2gtk = "2"
+zbus = "5"
 
 # download location dialog, linux uses gtk directly, and the menu bar or
 # tray icon, linux has the plasma widget instead

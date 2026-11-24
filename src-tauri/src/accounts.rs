@@ -3,9 +3,7 @@
 
 use std::{collections::HashMap, sync::Mutex};
 
-use serde::Deserialize;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 
@@ -20,7 +18,6 @@ pub struct Account {
 }
 
 /// account along with the state of its session
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 #[derive(Clone, Serialize)]
 pub struct Entry {
     pub id: String,
@@ -92,7 +89,6 @@ pub fn set_active(app: &AppHandle, id: Option<Uuid>) {
 /// @param app app handle
 ///
 /// @returns {Entry[]} accounts
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub fn list(app: &AppHandle) -> Vec<Entry> {
     let Some(accounts) = app.try_state::<Accounts>() else {
         return Vec::new();
