@@ -24,6 +24,10 @@ WORKDIR /site
 
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=80
 
+# the server only needs node, the bundled npm ships its own vulnerable undici
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
+
 COPY --from=deps /site/node_modules ./node_modules
 COPY --from=build /site/dist ./dist
 
